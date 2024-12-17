@@ -161,7 +161,7 @@ def plot_search_terms(search_words, bad_bands_list, mode = "any", options = opti
     plt.ylim(0.01, 5)
     plt.yscale("log")
     plt.xticks([num for num in range(350, 1150, 100)])
-    plot_name = f'./Plots/november/none_{search_words}.png'
+    plot_name = rf'C:\Users\s4770224\Documents\coding\Spectral_analysis\Plots\drafts\{search_words}.png'
     plt.savefig(plot_name)
     plt.show()
     return plotting_data

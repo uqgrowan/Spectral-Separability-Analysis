@@ -57,8 +57,8 @@ def calculate_arccosine_of_dot_product(vector1, vector2):
 def plot_cm (true_classes, pred_classes, save_name, normalize = "true"):
     cm = confusion_matrix(true_classes, pred_classes, normalize = normalize)
     cm_masked = np.ma.masked_equal(cm, 0)
-    rel_path = "Plots\\MEL_NZ_TAS_hh\\SAM_CMs\\"
-    save_path = rel_path +save_name
+    rel_path = r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Plots\MEL_NZ_TAS_hh\SAM_CMs"
+    save_path = rel_path +"\\" + save_name
 
     cm_df= pd.DataFrame(cm)
     cm_masked = cm_df.map(lambda v: str(round(v, 2)) if v >0 else "")
@@ -188,8 +188,8 @@ for c in range(0,1):
         num_labels_df = pd.DataFrame(num_labels)
         minimum_distance_class_df = pd.DataFrame(minimum_distance_class)
         overall_results = pd.concat([num_labels_df, minimum_distance_class_df, results_df], axis = 1)
-        overall_results.to_csv(rf".\Outputs\SAM_results\{fig_save_name}.csv")
+        overall_results.to_csv(rf"C:\Users\s4770224\Documents\coding\Spectral_analysis\Outputs\SAM_results\{fig_save_name}.csv")
         labels_dict_df= pd.DataFrame.from_dict(label_number_dict, orient = 'index')
-        labels_dict_df.to_csv(rf".\Outputs\SAM_results\dictionary_{fig_save_name}.csv")
+        labels_dict_df.to_csv(rf"C:\Users\s4770224\Documents\coding\Spectral_analysis\Outputs\SAM_results\dictionary_{fig_save_name}.csv")
         averages_master_df=pd.DataFrame.from_dict(averages_master)
-        averages_master_df.to_csv(rf".\Outputs\SAM_results\averages_{fig_save_name}.csv")
+        averages_master_df.to_csv(rf"C:\Users\s4770224\Documents\coding\Spectral_analysis\Outputs\SAM_results\averages_{fig_save_name}.csv")

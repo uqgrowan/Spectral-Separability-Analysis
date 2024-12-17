@@ -107,17 +107,16 @@ stats_dict = {}
 spectral_set_length = len(spectra_to_use.select_dtypes(include = "number").columns)
 
 #define the grouping from the chosen data
-basic_group = spectra_to_use["kbrgm"].unique()
-
+basic_group = spectra_to_use["Class"].unique()
 
 #for each group, setup, site: make a dictionary entry with all of the statistics from calc_stats
 for species in basic_group:
-    spec_targets = spectra_to_use[spectra_to_use["kbrgm"] == species]
-    setups = spec_targets["setup"].unique()
-    for setup in setups:
-        spec_set_targets = spec_targets[spec_targets["setup"] == setup]
+    spec_targets = spectra_to_use[spectra_to_use["Class"] == species]
+    sites = spec_targets["site"].unique()
+    for site in sites:
+        spec_set_targets = spec_targets[spec_targets["site"] == site]
         spec_set_reduced = spec_set_targets.select_dtypes(include = "number")
-        name = f"{species}_{setup}" 
+        name = f"{species}_{site}" 
         stats_dict[name]= calc_stats(spec_set_reduced)
 
 
@@ -129,7 +128,7 @@ options
 bad_bands_list = [num for num in range(753, 769)]
 
 #define plotting function
-def plot_search_terms(search_words, bad_bands_list, mode = "any", options = options, stats_dict = stats_dict):
+def plot_search_terms(search_words, bad_bands_list,  mode = "any", min_wavelength = 325, count_wavelength = 750, options = options, stats_dict = stats_dict):
     """ Plots the mean with standard deviation shaded of the search terms. Mode of either any or all to define search logic"""
     # Filtered list of options for subset using list comprehension
     
@@ -147,7 +146,7 @@ def plot_search_terms(search_words, bad_bands_list, mode = "any", options = opti
     for w in filtered_list:
         # Plot with error bars
         plotting_data = pd.DataFrame(stats_dict[w])
-        plotting_data.index = plotting_data.index+350
+        plotting_data.index = plotting_data.index+ min_wavelength
         mask = plotting_data.index.isin(bad_bands_list)
         plotting_data.loc[mask, :] = np.nan
         
@@ -158,16 +157,18 @@ def plot_search_terms(search_words, bad_bands_list, mode = "any", options = opti
     plt.xlabel('Wavelength')
     plt.legend(loc = "lower right")
     plt.ylabel('Log (Min-Max transformed reflectance)')
-    plt.ylim(0.01, 5)
+    plt.ylim(0.01, 20)
     plt.yscale("log")
-    plt.xticks([num for num in range(350, 1150, 100)])
+    plt.xticks([num for num in range(int(min_wavelength), int(min_wavelength + count_wavelength), 100)])
     plot_name = rf'C:\Users\s4770224\Documents\coding\Spectral_analysis\Plots\drafts\{search_words}.png'
+    svg_name = rf'C:\Users\s4770224\Documents\coding\Spectral_analysis\Plots\drafts\{search_words}.svg'
     plt.savefig(plot_name)
+    plt.savefig(svg_name)
     plt.show()
     return plotting_data
 
 # Substring to search for of categories you want to plot
-search_words = ["kelp", "brown", "red", "green", "mineral"]
+search_words = ["phyllospora"]
 
 #Call the plotting function according to the desired search words, mode, bad bands
 masked = plot_search_terms(search_words, bad_bands_list, "any")

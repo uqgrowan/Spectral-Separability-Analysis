@@ -9,7 +9,7 @@ import seaborn as sns
 def ingest_and_clean (data_path, labels_path):
     #prepare data for ingestion: Run once at start
     data_import = pd.read_csv(data_path)                    #INPUT REQUIRED
-    labels_import = pd.read_csv(labels_path, index_col = 0)   #INPUT REQUIRED
+    labels_import = pd.read_csv(labels_path)   #INPUT REQUIRED
 
     labelled_data = pd.concat([labels_import,data_import.iloc[:,1:]], axis = 1)
     labelled_data = labelled_data.dropna(axis = 1, how = "any") #restrict to whats measured in all sets

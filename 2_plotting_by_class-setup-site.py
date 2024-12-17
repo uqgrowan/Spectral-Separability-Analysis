@@ -81,7 +81,6 @@ def assign_targets_list(group = "all"):
 all_data = pd.read_csv(r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\MEL_NZ_TAS_spectra.csv")
 
 all_labels = pd.read_csv(r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\All_reflectance_labels.csv")
-all_labels = all_labels.iloc[:, 1:]
 all_data = all_data.dropna(axis = 1, how = "any")
 all_data = pd.merge(all_labels, all_data, left_on = "Class", right_on = "Class")
 all_data.head()

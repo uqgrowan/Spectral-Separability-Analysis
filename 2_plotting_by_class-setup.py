@@ -61,11 +61,11 @@ def standardize_data(df : pd.DataFrame, sensor, start_wavelength, end_wavelength
         df_std[col] = (targets_spectra.loc[:,col]-lil)/ denom 
     return df_std
 
-def assign_targets_list(group = "all"):
+def assign_targets_list(labels, group = "all"):
     if group == 'kelp':
         target_classes = ['ecklonia', 'cystophora', 'macrocystis', 'carpophyllum','gravel', 'grass', 'rock', 'durvillaea', 'rhodophyte', 'undaria', 'phyllospora','sand', 'acrocarpia', 'hormosira', 'mussels']
     elif group == "all":
-        target_classes = all_labels["Class"].unique()
+        target_classes = labels["Class"].unique()
     elif group == "browns":
         target_classes = ['ecklonia', 'cystophora', 'macrocystis', 'carpophyllum','gravel', 'grass', 'rock', 'durvillaea', 'rhodophyte', 'undaria', 'phyllospora','sand', 'acrocarpia', 'hormosira', 'mussels']
     elif group == "farm": 
@@ -75,17 +75,16 @@ def assign_targets_list(group = "all"):
 def import_data():  #choose paths here
     all_data = pd.read_csv(r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\MEL_NZ_TAS_spectra.csv")
     all_labels = pd.read_csv(r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\All_reflectance_labels.csv")
-    all_labels = all_labels.iloc[:, 1:]
     all_data = pd.concat([all_labels, all_data.iloc[:, 1:]], axis = 1)
     all_data = all_data.dropna(axis = 1, how = "any")
     all_data.head()
-    return all_data
+    return all_labels, all_data
 
 #import the data being used if not already available
-all_data = import_data()
+all_labels, all_data = import_data()
 
 #filter for only classes of interest, i.e. targets
-target_classes = assign_targets_list("all")
+target_classes = assign_targets_list(all_labels, "all")
 target_setup = ["handheld"]
 
 all_targets = all_data[all_data["Class"].isin(target_classes)]

@@ -32,9 +32,6 @@ def choose_SRF(satellite, min_wavelength, max_wavelength):
         print("Not a supported satellite. Try again.")
     return resampling_SRF
 
-#Choose naming convention for output resampled data
-in_file = "All_spectra"
-
 #Import data
 spectra = pd.read_csv(r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\MEL_NZ_TAS_spectra.csv")
 
@@ -90,5 +87,5 @@ for satellite in satellites:
 	to_export = pd.concat([front_cols, resampled.drop(["sample"], axis = 1)], axis = 1)
  
 	#output to csv file
-	out_path = r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\Resampled\\"+ in_file + "_" + satellite +".csv"
-	to_export.to_csv(out_path)
+	out_path = r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\Resampled\\"+ satellite +".csv"
+	to_export.to_csv(out_path, index = False)

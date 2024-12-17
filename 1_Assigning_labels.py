@@ -61,4 +61,4 @@ labels.loc[labels["Class"].isin (whites), "kbrgm"] = "wr"  #assign abiotic
 
 print(labels["kbrgm"].unique()) #check the new labels
 
-labels.to_csv(r'C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\All_reflectance_labels.csv')
+labels.to_csv(r'C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\All_reflectance_labels.csv', index = False)

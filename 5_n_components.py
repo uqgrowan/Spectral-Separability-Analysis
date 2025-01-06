@@ -3,6 +3,8 @@ import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from kneed import KneeLocator
+import glob
+import os
 
 def calculate_kaiser_value(explained_variance):
     """Calculate Kaiser value: Number of components with eigenvalues > 1"""
@@ -70,7 +72,7 @@ def main():
 sen2 = pd.read_csv(r'Combined_analysis\Resampled\sentinel_2.csv')
 sen2 = sen2.drop(["Class", "setup", "site"], axis = 1)
 sen2 = sen2.dropna(axis = 1, how = "any")
-asd = pd.read_csv(r'Combined_analysis\MEL_NZ_TAS_spectra.csv')
+asd = pd.read_csv(r'Combined_analysis\Resampled\asd_MEL_NZ_TAS_spectra.csv')
 asd = asd.drop(["Class", "setup", "site"], axis = 1)
 asd = asd.dropna(axis = 1, how = "any")
 lan9 = pd.read_csv(r'Combined_analysis\Resampled\landsat_9.csv')
@@ -86,4 +88,9 @@ dov = pd.read_csv(r'Combined_analysis\Resampled\dove.csv')
 dov = dov.drop(["Class", "setup", "site"], axis = 1)
 dov = dov.dropna(axis = 1, how = "any")
 
+for filepath in glob.iglob(r'.\Combined_analysis\Resampled\*.csv'):
+    filename = os.path.basename(filepath)[0:3]
+    spectra = pd.read_csv(filepath)
+    indep= spectra.drop(["Class", 'setup', 'site'], axis = 1)
+    filename = os.path.basename(filepath)
 main()

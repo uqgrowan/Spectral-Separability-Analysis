@@ -127,7 +127,7 @@ indep= spectra.drop(["Class", 'setup', 'site'], axis = 1)
 indep.shape
 
 #For loop to iterate over all resampled files
-for filepath in glob.iglob(r'.\Combined_analysis\MEL_NZ_TAS_spectra.csv'):
+for filepath in glob.iglob(r'C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\MEL_NZ_TAS_spectra.csv'):
     spectra = pd.read_csv(filepath) #, index_col=[0])
     indep= spectra.drop(["Class", 'setup', 'site'], axis = 1)
     filename = os.path.basename(filepath)
@@ -177,7 +177,7 @@ interval_results.to_csv("Optimal_n_by_marginal_gain.csv")
 #Choose n optimal by proximity to maximum accuracy
 maximum_results = pd.DataFrame()
 maximum_proximity_results = {}
-threshold = 0.10
+threshold = 0.05
 for key in means_dict.keys():
     min_index = []
     for col in means_dict[key].columns:

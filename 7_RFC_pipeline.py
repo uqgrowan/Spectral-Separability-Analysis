@@ -73,16 +73,29 @@ def many_runs(runs, n_comps, filename, column, sensor_keys):
 	plt.show()
 	return accuracies
 
+def assign_targets_list(group = "all"):
+    if group == 'kelp':
+        target_classes = ['ecklonia', 'macrocystis', 'undaria', 'petalonia']
+    elif group == "all":
+        target_classes = ['ecklonia', 'phyllospora', 'durvillaea', 'cystophora', 'sand', 'rock', 'acrocarpia', 'hormosira', 'mussels','macrocystis', 'carpophyllum', 'gravel', 'grass', 'filamentous_rhodophyte', 'undaria', 'frondose_rhodophyte', 'shell_litter', 'ulva', 'sargassum', 'barnacle_shells', 'worm_castings', 'scytosiphon','petalonia']
+    elif group == "browns":
+        target_classes = ['ecklonia', 'phyllospora', 'durvillaea', 'cystophora', 'acrocarpia', 'hormosira', 'macrocystis', 'carpophyllum', 'undaria', 'sargassum', 'scytosiphon','petalonia']
+    elif group == "farm": 
+        target_classes = ['macrocystis', 'carpophyllum','filamentous_rhodophyte', 'undaria']
+    return target_classes
+
 ##################################################################
 #parameterize the variables
-labels = pd.read_csv(r'Combined_analysis\All_reflectance_labels.csv')
-dep = labels.iloc[:,1]	#identify which class scheme to use by column number
-
-indep = pd.read_csv(r"Combined_analysis\MEL_NZ_TAS_spectra.csv").drop(["Class", 'setup', 'site'], axis = 1)
-n_comps = 3
+labels = pd.read_csv(r'C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\All_reflectance_labels.csv')
+labels.iloc[0,:].unique()
+keep_classes = assign_targets_list("browns") #could be all, kelp, browns, or farm 
+class_mask = labels["Class"].isin(keep_classes) #make mask for selecting classes of interest  
+dep = labels.iloc[:,1][class_mask]	#identify which class scheme to use by column number and mask
 
 ##################################################################
 # Get single run accuracy
+indep = pd.read_csv(r"Combined_analysis\MEL_NZ_TAS_spectra.csv").drop(["Class", 'setup', 'site'], axis = 1)
+n_comps = 3
 accuracy = classification_pipeline(indep, dep, n_comps, reducer= 'pca')
 print(accuracy)
 
@@ -94,7 +107,7 @@ accuracy_100 = many_runs(10,3, "dove.csv", "0", sensor_keys)
 # Run many times across all 
 
 #load table of n_comps and limit to rows found by proximity method
-n_comps_table = pd.read_csv(r"Optimal_n_overview.csv", index_col=0)[:5]
+n_comps_table = pd.read_csv(r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Outputs\n_comps_discussion\Optimal_n_overview.csv", index_col=0)[:5]
 
 #Name lookup dictionary
 sensor_keys = {
@@ -110,14 +123,15 @@ sensor_keys = {
 results= {}
 
 #loop over grouping coloumns and all files in resampling folder
-for column in range(0, labels.shape[1]):
-    dep = labels.iloc[:,column]	#identify which class scheme to use by column number
-    for filepath in glob.iglob(r'.\Combined_analysis\Resampled\*.csv'):
+for column in range(0, 1): # labels.shape[1]):
+    dep = labels.iloc[:,column][class_mask]	#identify which class scheme to use by column number
+    for filepath in glob.iglob(r'C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\Resampled\asd_MEL_NZ_TAS_spectra.csv'):
         filename = os.path.basename(filepath)
         n_comp = n_comps_table.loc[column, sensor_keys[filename]]
-        indep = pd.read_csv(filepath).drop(["Class", 'setup', 'site'], axis = 1)
+        indep = pd.read_csv(filepath).drop(["Class", 'setup', 'site'], axis = 1)[class_mask]
         results[f"{column}_{sensor_keys[filename]}"] = many_runs(100, n_comp, filename, column, sensor_keys)
         
 results = [np.mean(results[key]) for key in results]
 results_df = pd.DataFrame.from_dict(results).mean().to_frame().T
+results
 results_df.to_csv(r".\RFC_pipeline_results.csv")

@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import scipy
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -64,11 +63,12 @@ def standardize_data(df : pd.DataFrame, sensor):
         df_std[col] = (targets_spectra.loc[:,col]-lil)/ denom 
     return df_std
 
-def assign_targets_list(group = "all"):
+
+def assign_targets_list(labels, group = "all"):
     if group == 'kelp':
         target_classes = ['ecklonia', 'cystophora', 'macrocystis', 'carpophyllum','gravel', 'grass', 'rock', 'durvillaea', 'rhodophyte', 'undaria', 'phyllospora','sand', 'acrocarpia', 'hormosira', 'mussels']
     elif group == "all":
-        target_classes = all_labels["Class"].unique()
+        target_classes = labels["Class"].unique()
     elif group == "browns":
         target_classes = ['ecklonia', 'cystophora', 'macrocystis', 'carpophyllum','gravel', 'grass', 'rock', 'durvillaea', 'rhodophyte', 'undaria', 'phyllospora','sand', 'acrocarpia', 'hormosira', 'mussels']
     elif group == "farm": 
@@ -76,27 +76,63 @@ def assign_targets_list(group = "all"):
     return target_classes
 
 
-#import the data being used if not already available
-#all_data = pd.read_csv("all_targets_normalized550_sentinel_2_SRF.csv", index_col=0)
-all_data = pd.read_csv(r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\MEL_NZ_TAS_spectra.csv")
+def plot_search_terms(search_words, mode, bad_bands_list, options = options, stats_dict = stats_dict):
+    """ Plots the mean with standard deviation shaded of the search terms. Mode of either any or all to define search logic"""
+    # Filtered list of options for subset using list comprehension
+    filtered_list = [item for item in options if mode(word in item for word in search_words)]
 
-all_labels = pd.read_csv(r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\All_reflectance_labels.csv")
-all_data = all_data.dropna(axis = 1, how = "any")
-all_data = pd.merge(all_labels, all_data, left_on = "Class", right_on = "Class")
-all_data.head()
+    print(filtered_list)
+    sns.set_palette("tab20")
+    plt.clf()
 
-#Define the filter parameters to chose target spectra
-target_classes = assign_targets_list("all")
-target_sites = ["new_zealand", "melbourne", "tasmania"]
-target_setup = ["handheld"]
+    for w in filtered_list:
+        # Plot with error bars
+        plotting_data = pd.DataFrame(stats_dict[w])
+        plotting_data.index = plotting_data.index+350
+        mask = plotting_data.index.isin(bad_bands_list)
+        plotting_data.loc[mask, :] = np.nan
+        
+        plt.plot(plotting_data.index, plotting_data['mean'], "-", label = w)  
+        plt.fill_between(plotting_data.index, plotting_data['lower'], plotting_data['upper'], alpha=0.1)  # Fill between the lower and upper bounds
+    plt.tight_layout(pad = 4, w_pad= 1, h_pad= 1)
+    plt.title(search_words)
+    plt.xlabel('Wavelength')
+    plt.legend(loc = "lower right")
+    plt.ylabel('Log (Min-Max transformed reflectance)')
+    plt.ylim(0.01, 1)
+    plt.yscale("log")
+    plt.xticks([num for num in range(350, 1150, 100)])
+    plot_name = rf'C:\Users\s4770224\Documents\coding\Spectral_analysis\Plots\drafts\{search_words}.png'
+    plt.savefig(plot_name)
+    plt.show()
+    return plotting_data
 
-#apply the filters
-all_targets = all_data[all_data["Class"].isin(target_classes)]
-all_targets = all_targets[all_targets["setup"].isin(target_setup)]
-all_targets = all_targets[all_targets["site"].isin(target_sites)]
-all_targets = all_targets.reset_index().drop("index", axis = 1)
-labels_columns = all_targets.select_dtypes(include = "object")
-targets_spectra = all_targets.select_dtypes(include = "number")
+
+def format_for_plotting(data, labels, bad_bands_list):
+    """ Add labels to data and mask bad bands."""
+    all_data = data.dropna(axis = 1, how = "any")
+    labeled_data = pd.merge(labels, all_data, left_on = "Class", right_on = "Class")
+    mask = labeled_data.columns.isin(bad_bands_list)
+    labeled_data.loc[mask, :] = np.nan
+    return labeled_data
+
+
+def filter_for_plotting(data, 
+                        labels, 
+                        target_sites, 
+                        target_setup,
+                        scheme = "all",):
+    #Define the filter parameters to chose target spectra
+    target_classes = assign_targets_list(scheme)
+
+
+    #apply the filters
+    all_targets = all_data[all_data["Class"].isin(target_classes)]
+    all_targets = all_targets[all_targets["setup"].isin(target_setup)]
+    all_targets = all_targets[all_targets["site"].isin(target_sites)]
+    all_targets = all_targets.reset_index().drop("index", axis = 1)
+    labels_columns = all_targets.select_dtypes(include = "object")
+    targets_spectra = all_targets.select_dtypes(include = "number")
 
 #Normalize spectra to a range of 0 to 1
 std_df = standardize_data(targets_spectra, "handheld")
@@ -136,36 +172,7 @@ bad_bands_list = [num for num in range(753, 769)]
 
 
 # Substring to search for of categories you want to plot
-def plot_search_terms(search_words, mode, bad_bands_list, options = options, stats_dict = stats_dict):
-    """ Plots the mean with standard deviation shaded of the search terms. Mode of either any or all to define search logic"""
-    # Filtered list of options for subset using list comprehension
-    filtered_list = [item for item in options if mode(word in item for word in search_words)]
 
-    print(filtered_list)
-    sns.set_palette("tab20")
-    plt.clf()
-
-    for w in filtered_list:
-        # Plot with error bars
-        plotting_data = pd.DataFrame(stats_dict[w])
-        plotting_data.index = plotting_data.index+350
-        mask = plotting_data.index.isin(bad_bands_list)
-        plotting_data.loc[mask, :] = np.nan
-        
-        plt.plot(plotting_data.index, plotting_data['mean'], "-", label = w)  
-        plt.fill_between(plotting_data.index, plotting_data['lower'], plotting_data['upper'], alpha=0.1)  # Fill between the lower and upper bounds
-    plt.tight_layout(pad = 4, w_pad= 1, h_pad= 1)
-    plt.title(search_words)
-    plt.xlabel('Wavelength')
-    plt.legend(loc = "lower right")
-    plt.ylabel('Log (Min-Max transformed reflectance)')
-    plt.ylim(0.01, 1)
-    plt.yscale("log")
-    plt.xticks([num for num in range(350, 1150, 100)])
-    plot_name = rf'C:\Users\s4770224\Documents\coding\Spectral_analysis\Plots\drafts\{search_words}.png'
-    plt.savefig(plot_name)
-    plt.show()
-    return plotting_data
 
 search_words = ['acrocarpia', 'cystophora', 'carpophyllum', 'durvillaea', 'hormosira', 'phyllospora', 'sargassum', 'scytosiphon']
 #Call the plotting function according to the desired search words, mode, bad bands

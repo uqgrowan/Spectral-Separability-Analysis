@@ -1,0 +1,336 @@
+,.\Combined_analysis\Resampled\All_spectra_dove.csv_1,.\Combined_analysis\Resampled\All_spectra_dove.csv_2,.\Combined_analysis\Resampled\All_spectra_dove.csv_3,.\Combined_analysis\Resampled\All_spectra_dove.csv_4,.\Combined_analysis\Resampled\All_spectra_dove.csv_0,.\Combined_analysis\Resampled\All_spectra_landsat_9.csv_0,.\Combined_analysis\Resampled\All_spectra_landsat_9.csv_1,.\Combined_analysis\Resampled\All_spectra_landsat_9.csv_2,.\Combined_analysis\Resampled\All_spectra_landsat_9.csv_3,.\Combined_analysis\Resampled\All_spectra_landsat_9.csv_4,.\Combined_analysis\Resampled\All_spectra_sentinel_2.csv_0,.\Combined_analysis\Resampled\All_spectra_sentinel_2.csv_1,.\Combined_analysis\Resampled\All_spectra_sentinel_2.csv_2,.\Combined_analysis\Resampled\All_spectra_sentinel_2.csv_3,.\Combined_analysis\Resampled\All_spectra_sentinel_2.csv_4,.\Combined_analysis\Resampled\All_spectra_skysat.csv_0,.\Combined_analysis\Resampled\All_spectra_skysat.csv_1,.\Combined_analysis\Resampled\All_spectra_skysat.csv_2,.\Combined_analysis\Resampled\All_spectra_skysat.csv_3,.\Combined_analysis\Resampled\All_spectra_skysat.csv_4,.\Combined_analysis\Resampled\All_spectra_superdove.csv_0,.\Combined_analysis\Resampled\All_spectra_superdove.csv_1,.\Combined_analysis\Resampled\All_spectra_superdove.csv_2,.\Combined_analysis\Resampled\All_spectra_superdove.csv_3,.\Combined_analysis\Resampled\All_spectra_superdove.csv_4
+melted,"     components variable     value
+0             1        0  0.683761
+1             2        0  0.829060
+2             1        1  0.623932
+3             2        1  0.854701
+4             1        2  0.606838
+..          ...      ...       ...
+195           2       97  0.829060
+196           1       98  0.675214
+197           2       98  0.829060
+198           1       99  0.606838
+199           2       99  0.811966
+
+[200 rows x 3 columns]","     components variable     value
+0             1        0  0.589744
+1             2        0  0.735043
+2             1        1  0.487179
+3             2        1  0.769231
+4             1        2  0.623932
+..          ...      ...       ...
+195           2       97  0.777778
+196           1       98  0.512821
+197           2       98  0.777778
+198           1       99  0.623932
+199           2       99  0.777778
+
+[200 rows x 3 columns]","     components variable     value
+0             1        0  0.726496
+1             2        0  0.914530
+2             1        1  0.752137
+3             2        1  0.923077
+4             1        2  0.717949
+..          ...      ...       ...
+195           2       97  0.905983
+196           1       98  0.760684
+197           2       98  0.923077
+198           1       99  0.726496
+199           2       99  0.931624
+
+[200 rows x 3 columns]","     components variable     value
+0             1        0  0.470085
+1             2        0  0.726496
+2             1        1  0.495726
+3             2        1  0.760684
+4             1        2  0.512821
+..          ...      ...       ...
+195           2       97  0.717949
+196           1       98  0.521368
+197           2       98  0.717949
+198           1       99  0.495726
+199           2       99  0.777778
+
+[200 rows x 3 columns]","     components variable     value
+0             1        0  0.196581
+1             2        0  0.487179
+2             1        1  0.205128
+3             2        1  0.487179
+4             1        2  0.282051
+..          ...      ...       ...
+195           2       97  0.504274
+196           1       98  0.205128
+197           2       98  0.538462
+198           1       99  0.230769
+199           2       99  0.538462
+
+[200 rows x 3 columns]","     components variable     value
+0             1        0  0.188034
+1             2        0  0.495726
+2             3        0  0.649573
+3             4        0  0.658120
+4             5        0  0.786325
+..          ...      ...       ...
+695           3       99  0.658120
+696           4       99  0.735043
+697           5       99  0.743590
+698           6       99  0.726496
+699           7       99  0.743590
+
+[700 rows x 3 columns]","     components variable     value
+0             1        0  0.666667
+1             2        0  0.820513
+2             3        0  0.811966
+3             4        0  0.854701
+4             5        0  0.863248
+..          ...      ...       ...
+695           3       99  0.829060
+696           4       99  0.888889
+697           5       99  0.905983
+698           6       99  0.794872
+699           7       99  0.905983
+
+[700 rows x 3 columns]","     components variable     value
+0             1        0  0.555556
+1             2        0  0.829060
+2             3        0  0.820513
+3             4        0  0.854701
+4             5        0  0.846154
+..          ...      ...       ...
+695           3       99  0.854701
+696           4       99  0.871795
+697           5       99  0.888889
+698           6       99  0.880342
+699           7       99  0.871795
+
+[700 rows x 3 columns]","     components variable     value
+0             1        0  0.769231
+1             2        0  0.897436
+2             3        0  0.888889
+3             4        0  0.948718
+4             5        0  0.948718
+..          ...      ...       ...
+695           3       99  0.914530
+696           4       99  0.982906
+697           5       99  0.940171
+698           6       99  0.965812
+699           7       99  0.940171
+
+[700 rows x 3 columns]","     components variable     value
+0             1        0  0.461538
+1             2        0  0.666667
+2             3        0  0.803419
+3             4        0  0.871795
+4             5        0  0.914530
+..          ...      ...       ...
+695           3       99  0.760684
+696           4       99  0.863248
+697           5       99  0.811966
+698           6       99  0.846154
+699           7       99  0.854701
+
+[700 rows x 3 columns]","     components variable     value
+0             1        0  0.196581
+1             2        0  0.529915
+2             3        0  0.683761
+3             4        0  0.666667
+4             5        0  0.837607
+..          ...      ...       ...
+795           4       99  0.683761
+796           5       99  0.786325
+797           6       99  0.794872
+798           7       99  0.735043
+799           8       99  0.837607
+
+[800 rows x 3 columns]","     components variable     value
+0             1        0  0.666667
+1             2        0  0.794872
+2             3        0  0.829060
+3             4        0  0.829060
+4             5        0  0.880342
+..          ...      ...       ...
+795           4       99  0.905983
+796           5       99  0.897436
+797           6       99  0.897436
+798           7       99  0.871795
+799           8       99  0.957265
+
+[800 rows x 3 columns]","     components variable     value
+0             1        0  0.461538
+1             2        0  0.794872
+2             3        0  0.803419
+3             4        0  0.854701
+4             5        0  0.846154
+..          ...      ...       ...
+795           4       99  0.854701
+796           5       99  0.871795
+797           6       99  0.880342
+798           7       99  0.871795
+799           8       99  0.923077
+
+[800 rows x 3 columns]","     components variable     value
+0             1        0  0.675214
+1             2        0  0.880342
+2             3        0  0.940171
+3             4        0  0.948718
+4             5        0  0.957265
+..          ...      ...       ...
+795           4       99  0.914530
+796           5       99  0.957265
+797           6       99  0.931624
+798           7       99  0.991453
+799           8       99  0.948718
+
+[800 rows x 3 columns]","     components variable     value
+0             1        0  0.555556
+1             2        0  0.717949
+2             3        0  0.769231
+3             4        0  0.854701
+4             5        0  0.863248
+..          ...      ...       ...
+795           4       99  0.760684
+796           5       99  0.888889
+797           6       99  0.905983
+798           7       99  0.905983
+799           8       99  0.888889
+
+[800 rows x 3 columns]","     components variable     value
+0             1        0  0.290598
+1             2        0  0.444444
+2             3        0  0.598291
+3             1        1  0.239316
+4             2        1  0.521368
+..          ...      ...       ...
+295           2       98  0.512821
+296           3       98  0.598291
+297           1       99  0.264957
+298           2       99  0.504274
+299           3       99  0.598291
+
+[300 rows x 3 columns]","     components variable     value
+0             1        0  0.495726
+1             2        0  0.786325
+2             3        0  0.846154
+3             1        1  0.623932
+4             2        1  0.794872
+..          ...      ...       ...
+295           2       98  0.837607
+296           3       98  0.897436
+297           1       99  0.649573
+298           2       99  0.786325
+299           3       99  0.854701
+
+[300 rows x 3 columns]","     components variable     value
+0             1        0  0.521368
+1             2        0  0.777778
+2             3        0  0.811966
+3             1        1  0.538462
+4             2        1  0.811966
+..          ...      ...       ...
+295           2       98  0.820513
+296           3       98  0.897436
+297           1       99  0.504274
+298           2       99  0.735043
+299           3       99  0.811966
+
+[300 rows x 3 columns]","     components variable     value
+0             1        0  0.700855
+1             2        0  0.905983
+2             3        0  0.948718
+3             1        1  0.675214
+4             2        1  0.905983
+..          ...      ...       ...
+295           2       98  0.931624
+296           3       98  0.940171
+297           1       99  0.735043
+298           2       99  0.854701
+299           3       99  0.957265
+
+[300 rows x 3 columns]","     components variable     value
+0             1        0  0.538462
+1             2        0  0.709402
+2             3        0  0.837607
+3             1        1  0.504274
+4             2        1  0.752137
+..          ...      ...       ...
+295           2       98  0.743590
+296           3       98  0.811966
+297           1       99  0.478632
+298           2       99  0.735043
+299           3       99  0.777778
+
+[300 rows x 3 columns]","     components variable     value
+0             1        0  0.213675
+1             2        0  0.478632
+2             3        0  0.581197
+3             4        0  0.786325
+4             5        0  0.743590
+..          ...      ...       ...
+595           2       99  0.435897
+596           3       99  0.623932
+597           4       99  0.717949
+598           5       99  0.752137
+599           6       99  0.760684
+
+[600 rows x 3 columns]","     components variable     value
+0             1        0  0.598291
+1             2        0  0.820513
+2             3        0  0.837607
+3             4        0  0.897436
+4             5        0  0.914530
+..          ...      ...       ...
+595           2       99  0.829060
+596           3       99  0.897436
+597           4       99  0.854701
+598           5       99  0.905983
+599           6       99  0.923077
+
+[600 rows x 3 columns]","     components variable     value
+0             1        0  0.529915
+1             2        0  0.811966
+2             3        0  0.803419
+3             4        0  0.905983
+4             5        0  0.863248
+..          ...      ...       ...
+595           2       99  0.837607
+596           3       99  0.846154
+597           4       99  0.888889
+598           5       99  0.871795
+599           6       99  0.948718
+
+[600 rows x 3 columns]","     components variable     value
+0             1        0  0.777778
+1             2        0  0.940171
+2             3        0  0.931624
+3             4        0  0.940171
+4             5        0  0.940171
+..          ...      ...       ...
+595           2       99  0.863248
+596           3       99  0.948718
+597           4       99  0.957265
+598           5       99  0.957265
+599           6       99  0.982906
+
+[600 rows x 3 columns]","     components variable     value
+0             1        0  0.461538
+1             2        0  0.717949
+2             3        0  0.777778
+3             4        0  0.863248
+4             5        0  0.905983
+..          ...      ...       ...
+595           2       99  0.769231
+596           3       99  0.829060
+597           4       99  0.854701
+598           5       99  0.871795
+599           6       99  0.914530
+
+[600 rows x 3 columns]"
+file,dove,dove,dove,dove,dove,landsat_9,landsat_10,landsat_11,landsat_12,landsat_13,Sentinel_2,Sentinel_2,Sentinel_2,Sentinel_2,Sentinel_2,skysat,skysat,skysat,skaysat,skysat,superdove,superdove,superdove,superdove,superdove
+grouping,1,2,3,4,0,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4
+optimal_n,,,,,,6,5,5,6,6,7,6,6,6,6,,,,2,,5,4,4,4,5
+accuracy_n,,,,,,0.759,0.885,0.876,0.959,0.876,0.818,0.910,0.893,0.959,0.888,,,,0.908,,0.780,0.898,0.889,0.956,0.886
+remainder_avg,,,,,,0.774,0.896,0.884,0.958,0.890,0.817,0.914,0.902,0.958,0.891,,,,0.939,,0.785,0.914,0.908,0.964,0.904
+threshold,,,,,,0.02,0.015,0.01,0.005,0.015,0.005,0.005,0.01,0.005,0.005,,,,0.035,,0.01,0.02,0.02,0.01,0.02
+,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,0.015,0.011,0.007,-0.001,0.014,-0.001,0.004,0.009,-0.001,0.003,,,,0.030,0.000,0.006,0.015,0.019,0.008,0.018

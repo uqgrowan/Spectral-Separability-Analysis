@@ -5,6 +5,8 @@
 
 
 #Determining optimal n_comps to extract
+import glob
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,8 +19,7 @@ from sklearn.decomposition import PCA
 from sklearn.decomposition import KernelPCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
-import glob
-import os
+
 
 def feature_extraction_pipeline(independent, dependent, n_comps: float, test_split = 0.3, preprocessing = "standard scaler", reducer = "pca", classifier= "random forest classifier"):
 	"""Run a feature extraction pipeline on a specified spectral dataset. Pipeline includes standardization, feature extraction and classification. Outputs the accuracy of the pipeline on a test dataset. Functions available to the pipeline are defined below int he dictionary 'functions' to allow them to be callable. *** Note that other functions need to be imported before use.*** """

@@ -26,6 +26,8 @@ class PreprocessRefl:
         self.spectra = None
         self.target_classes = None
         self.spectra_reduc = None
+        self.spectra_filtered = None
+        self.spectra_norm = None
         
     def import_data(self):
         """
@@ -118,7 +120,7 @@ class PreprocessRefl:
 
 
     def crop_noisy_wavelengths(self):
-        self.spectra = self.spectra.loc[:, self.start_nm:self.end_nm ]
+        self.spectra_reduc = self.spectra_filtered.loc[:, self.start_nm:self.end_nm ]
 
 
     def normalize_data (self) -> pd.DataFrame: 
@@ -132,30 +134,40 @@ class PreprocessRefl:
         """
         chosen_scaler = self.scaler.lower()
         if chosen_scaler == "minmax":
-            self.spectra = pd.DataFrame(minmax_scale(self.spectra, axis = 1))
+            self.spectra_norm = pd.DataFrame(minmax_scale(self.spectra_reduc, axis = 1))
         elif chosen_scaler == "standard":
             scaler = StandardScaler()
-            self.spectra = pd.DataFrame(scaler.fit_transform(self.spectra.T).T)
+            self.spectra_norm = pd.DataFrame(scaler.fit_transform(self.spectra_reduc.T).T)
         elif chosen_scaler == "none":
             pass
         else:
             raise ValueError("Invalid scaler. Chose either 'minmax' or 'standard.")
+        self.spectra_norm.index = self.spectra_reduc.index
+        self.spectra_norm.columns = self.spectra_reduc.columns
 
 
-    def assign_targets_list(self):
+    def assign_targets_list(self, genus = None):
         """
         Assign the list of targets to be included in the chosen target scheme.
         """
         if self.target_scheme == 'kelp':
-            self.target_classes = ['ecklonia', 'cystophora', 'macrocystis', 'carpophyllum','gravel', 'grass', 'rock', 'durvillaea', 'rhodophyte', 'undaria', 'phyllospora','sand', 'acrocarpia', 'hormosira', 'mussels']
+            self.target_classes = ['ecklonia', 'macrocystis', 'undaria']
         elif self.target_scheme == "all":
             self.target_classes = self.labels["Class"].unique()
         elif self.target_scheme == "browns":
-            self.target_classes = ['ecklonia', 'cystophora', 'macrocystis', 'carpophyllum','gravel', 'grass', 'rock', 'durvillaea', 'rhodophyte', 'undaria', 'phyllospora','sand', 'acrocarpia', 'hormosira', 'mussels']
+            self.target_classes = ['ecklonia', 'cystophora', 'macrocystis', 'carpophyllum','durvillaea', 'undaria', 'phyllospora', 'acrocarpia', 'hormosira', 'petalonia', 'sargassum', 'scytosiphon']
         elif self.target_scheme == "farm": 
             self.target_classes = ['macrocystis', 'carpophyllum','rhodophyte', 'undaria']
+        elif self.target_scheme == "all_macros":
+            self.target_classes = ['acrocarpia', 'carpophyllum', 'cystophora', 'durvillaea', 'ecklonia','filamentous_rhodophyte', 'frondose_rhodophyte', 'hormosira', 'macrocystis','petalonia', 'phyllospora','sargassum','scytosiphon', 'ulva', 'undaria']
+        elif self.target_scheme == "all_autos":
+            self.target_classes = ['acrocarpia', 'carpophyllum', 'cystophora', 'durvillaea', 'ecklonia','filamentous_rhodophyte', 'grass','frondose_rhodophyte', 'hormosira', 'macrocystis','petalonia', 'phyllospora','sargassum','scytosiphon', 'ulva', 'undaria']
+        elif self.target_scheme == "reds":
+            self.target_classes = ['filamentous_rhodophyte', 'frondose_rhodophyte']
+        elif self.target_scheme == "other":
+            self.target_classes = [genus]
         else:
-            raise ValueError("Invalid target scheme. Choose from 'kelp', 'all', 'browns', or 'farm'.")
+            raise ValueError("Invalid target scheme. Choose from 'kelp', 'all', 'browns', 'all_macros', 'all_autos' or 'farm'.")
 
 
     def filter_targets(self):
@@ -170,14 +182,14 @@ class PreprocessRefl:
             mask &= self.labels["sites"].isin(self.target_sites)
         
         # Apply the filters
-        self.spectra = self.spectra[mask]
-        self.labels = self.labels[mask]
+        self.spectra_filtered = self.spectra.loc[mask]
+        self.labels_filtered = self.labels.loc[mask]
         
         # Validation
-        if len(self.spectra) == 0:
+        if len(self.spectra_filtered) == 0:
             raise ValueError("No spectra remaining after filtering.")
 
-        print(f"Data filtered from {len(mask)} to {len(self.spectra)} spectra.")
+        print(f"Data filtered from {len(self.spectra)} to {len(self.spectra_filtered)} spectra.")
 
 
     def default_chain(self):

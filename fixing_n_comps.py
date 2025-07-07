@@ -21,8 +21,14 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 
 
-def feature_extraction_pipeline(independent, dependent, n_comps: float, test_split = 0.3, preprocessing = "standard scaler", reducer = "pca", classifier= "random forest classifier"):
-	"""Run a feature extraction pipeline on a specified spectral dataset. Pipeline includes standardization, feature extraction and classification. Outputs the accuracy of the pipeline on a test dataset. Functions available to the pipeline are defined below int he dictionary 'functions' to allow them to be callable. *** Note that other functions need to be imported before use.*** """
+def feature_extraction_pipeline(independent,
+                                dependent,
+                                n_comps: float,
+                                test_split = 0.3,
+                                preprocessing = "standard scaler",
+                                reducer = "pca",
+                                classifier= "random forest classifier"):
+	"""Run a feature extraction pipeline on a specified spectral dataset. Pipeline includes standardization, feature extraction and classification. Outputs the accuracy of the pipeline on a test dataset. Functions available to the pipeline are defined below in the dictionary 'functions' to allow them to be callable. *** Note that other functions need to be imported before use.*** """
 
 	x_train, x_test, y_train, y_test = train_test_split(independent, dependent, test_size= test_split, stratify = dep) 
 

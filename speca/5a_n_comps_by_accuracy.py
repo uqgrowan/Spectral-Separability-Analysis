@@ -32,7 +32,7 @@ def classification_pipeline(independent, dependent, n_comps: float, test_split =
     Returns: 
         Pipeline accuracy (float)
     """
-	x_train, x_test, y_train, y_test = train_test_split(independent, dependent, test_size= test_split, stratify = dep) 
+	x_train, x_test, y_train, y_test = train_test_split(independent, dependent, test_size= test_split, stratify = dep)
 
 	functions = {
 		"logistic regression" : LogisticRegression(),
@@ -42,7 +42,7 @@ def classification_pipeline(independent, dependent, n_comps: float, test_split =
 		"standard scaler" : StandardScaler(),
 		"svc" : SVC()
 	}
-	pipe = Pipeline ( [ 
+	pipe = Pipeline ( [
 		("scaler", functions[preprocessing]),  #scale your data to mean 0, var 1
 		("reducer", functions[reducer] ),    # extract n components. 0<n<1 will keep components until that variance is met (0.9 = 90%)
 		( "classifier", functions[classifier] ), # train a random forest classifier

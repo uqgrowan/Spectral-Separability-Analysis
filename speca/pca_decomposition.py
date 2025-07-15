@@ -47,8 +47,7 @@ class NCompsByAccuracy:
         self.labels_col = labels_col
         self.accuracy_results = None
 
-    
-    
+
     def rf_pipeline(self,n_comps, test_split = 0.3):
         x_train, x_test, y_train, y_test = train_test_split(self.spectra, self.labels[self.labels_col], test_size= test_split, stratify = self.labels[self.labels_col])
 
@@ -59,7 +58,7 @@ class NCompsByAccuracy:
         pipe.fit(x_train, y_train)
         return pipe.score(x_test, y_test)
 
-        
+
     def run_rfs(self, n, run_count = 100):
         """ Run the random forest pipeline a given number of times with redivision of the data every run, aggregating the results."""
         scores = []
@@ -67,7 +66,8 @@ class NCompsByAccuracy:
             score = self.rf_pipeline(n_comps = n)
             scores.append(score)
         return scores
-    
+
+
     def calc_mean_accuracies(self, max_n):
         """
         Calculate the mean accuracies for PCA components from 1 to max_n.
@@ -105,8 +105,8 @@ class NCompsByAccuracy:
         results["Accuracy at n"] = float(df.loc[n])
         results["Max Accuracy"] = float(df.max())
         return results
-    
-    
+
+
     def find_n_by_margin(self, thresh = 0.05, verbose =False):
         """
         Find minimum number of components n where the accuracy marginally gained by including n+1 components is less than the threshold value. 
@@ -136,18 +136,15 @@ class NCompsByAccuracy:
             results["Accuracy at n+1"] = float(df.loc[t])
         else:
             # Case where threshold is never met
-            max_idx = df.shape[0]
             results["n"] = 1000
             results["Accuracy at n"] = float(df.loc[t-1])
             results["Accuracy at n+1"] = float(df.loc[t])
-                
-            if verbose is True:
-                if mask.any():
-                    print(f"Optimal components by marginal gain: {t-1}")
-                else:
-                    print(f"Marginal gain threshold unmet with all components.")
-        
+   
+        if verbose is True:
+            if mask.any():
+                print(f"Optimal components by marginal gain: {t-1}")
+            else:
+                print("Marginal gain threshold unmet with all components.")
+
         # Convert results to DataFrame all at once
         return results
-
-

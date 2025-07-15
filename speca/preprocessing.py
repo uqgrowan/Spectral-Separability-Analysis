@@ -2,24 +2,25 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import minmax_scale
+import speca.auxiliary as aux
 
 class PreprocessRefl:
     """
     Class for preparing reflectance spectra for later analysis using the speca toolbox.
     Preprocessing includes importing, labelling, filtering, cropping noise and optional scaling/normalizing.
     """
-    def __init__(self, data_path, bad_bands = None, scaler = "standard", target_scheme = "all", target_sites = None, target_setup = None, start_nm = 400, end_nm = 900):
-        
+    def __init__(self, data_path: str, bad_bands = None, scaler = "standard", target_scheme = "all", target_sites = None, target_setup = None, start_nm = 400, end_nm = 900):
+
         # Initalize analysis parameters
         self.data_path = data_path
         self.bad_bands = bad_bands if bad_bands is not None else []
         self.scaler = scaler
         self.target_scheme = target_scheme
-        self.target_sites = None
-        self.target_setup = None
+        self.target_sites = target_sites if target_sites is not None else None
+        self.target_setup = target_setup if target_setup is not None else None
         self.start_nm = str(start_nm)
         self.end_nm = str(end_nm)
-        
+
         # Initialize class attributes for later use
         self.data = None
         self.labels = None
@@ -27,8 +28,9 @@ class PreprocessRefl:
         self.target_classes = None
         self.spectra_reduc = None
         self.spectra_filtered = None
+        self.labels_filtered = None
         self.spectra_norm = None
-        
+
     def import_data(self):
         """
         Import data from .csv file with class names in leftmost column.
@@ -50,7 +52,8 @@ class PreprocessRefl:
 
 
     def make_new_labels(self):
-        """ Create new label columns for the defined schemes.
+        """
+        Create new label columns for the defined schemes.
         
         Args:
             labels [pd.DataFrame]: Existing class labels
@@ -201,6 +204,7 @@ class PreprocessRefl:
         """
         self.import_data()
         self.make_new_labels()
+        self.spectra, self.labels = aux.sort_classes(self.spectra, self.labels,  labels_col = "Class")
         self.filter_targets()
         self.crop_noisy_wavelengths()
         self.normalize_data()

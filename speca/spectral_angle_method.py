@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, accuracy_score, balanced_accuracy_score, recall_score, precision_score
+from sklearn.metrics import confusion_matrix, accuracy_score, balanced_accuracy_score, recall_score, precision_score, f1_score
 import seaborn as sns
 import speca.auxiliary as aux
 
@@ -123,17 +123,19 @@ class SAM:
         balanced_accuracy = balanced_accuracy_score(self.numerical_labels, minimum_distance_class)
         recall = recall_score(self.numerical_labels, minimum_distance_class, average="weighted")
         precision = precision_score(self.numerical_labels, minimum_distance_class, average= "macro")
+        f1 = f1_score(self.numerical_labels, minimum_distance_class, average = "macro")
         print(f" The accuracy of {fig_save_name} is: {accuracy}")
         print(f" The balanced accuracy of {fig_save_name} is: {balanced_accuracy}")
         print(f" The recall of {fig_save_name} is: {recall}")
         print(f" The precision of {fig_save_name} is: {precision}")
-        
-    def plot_cm(self): 
+        print(f" The macro F1 score of {fig_save_name} is: {f1}")
+
+    def plot_cm(self):
         """ Plot the confusion matrix of the classification"""
-        
+
         # Make confusion matrix
         cm = confusion_matrix(self.numerical_labels, self.prediction["predicted_num"], normalize = "true")
-        
+
         # Mask zero values
         #cm_masked = np.ma.masked_equal(cm, 0)
         cm_df= pd.DataFrame(cm)

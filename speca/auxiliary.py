@@ -42,20 +42,20 @@ def sort_classes(spectra, labels, labels_col = "Class", sort_order = None):
     if spectra.shape[0] != labels.shape[0]:
         raise ValueError("The number of rows in spectra and labels must match.")
     
-    default_order = ['ecklonia',
+    default_order = ['undaria',
                      'macrocystis',
-                     'petalonia',
-                     'undaria',
-                     'phyllospora',
+                     'ecklonia',
                      'durvillaea',
+                     'phyllospora',
                      'cystophora',
-                     'acrocarpia',
-                     'hormosira',
                      'carpophyllum',
                      'scytosiphon',
+                     'petalonia',
+                     'acrocarpia',
+                     'hormosira',
                      'sargassum',
-                     'filamentous_rhodophyte',
                      'frondose_rhodophyte',
+                     'filamentous_rhodophyte',
                      'ulva',
                      'grass',
                      'mussels',
@@ -74,6 +74,6 @@ def sort_classes(spectra, labels, labels_col = "Class", sort_order = None):
     data = data.sort_values("sort_column")
     labels = data.select_dtypes(include="object")
     spectra = data.select_dtypes(include="number")
-
+    return spectra, labels
 
     

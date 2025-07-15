@@ -156,6 +156,7 @@ class SAM:
         plt.xticks(rotation = 30)
         plt.ylabel('True Labels')
         plt.title(f'Confusion Matrix for {self.labels_col} - SAM')
+        plt.savefig("./plots/SAM_cm.svg", bbox_inches='tight', dpi=600)
         plt.show()
 
     def sam_chain(self):

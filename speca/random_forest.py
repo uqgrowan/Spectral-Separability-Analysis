@@ -148,6 +148,7 @@ class RandoForest:
         plt.xticks(rotation = 90)
         plt.ylabel('True Labels')
         plt.title(f'Confusion Matrix for {self.labels_col} - RFC')
+        plt.savefig("./plots/RFC_cm.svg")
         plt.show()
 
 

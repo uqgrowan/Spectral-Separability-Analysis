@@ -23,7 +23,7 @@ def perform_rfc(x_train, x_test, y_train, y_test, classes, hyperparameters = Non
     results["bal_acc"] = balanced_accuracy_score(y_test, predictions)
     results["f1"]= f1_score(y_test, predictions, average = "macro", zero_division=np.nan)
     return results
-        
+
 
 class RandoForest:
     """
@@ -32,19 +32,17 @@ class RandoForest:
     def __init__(self,
                  spectra,
                  labels,
-                 n_comps,
-                 labels_col = "Class",
+                 labels_col = None,
                  runs = 100):
         """
         Initialize the random forest classifier class.
         Args:
-            spectra (pd.DataFrame): Reflectance data.
+            spectra (pd.DataFrame): Reflectance data as PCA components
             labels (pd.DataFrame): Labels for the spectra.
         """
         self.spectra = spectra
         self.labels = labels
-        self.labels_col = labels_col
-        self.n_comps = n_comps
+        self.labels_col = labels_col if labels_col is not None else "Class"
         self.runs = runs
         
         # Placeholders for later
@@ -79,7 +77,10 @@ class RandoForest:
         """"
         Aggregate the various scores of many runs of the random forest classifier
         """
-        dep = self.labels[self.labels_col]
+        if len(self.labels.shape) >1:
+            dep = self.labels[self.labels_col]
+        else:
+            dep = self.labels
 
         # Create placeholder variables
         accuracies = []
@@ -89,8 +90,19 @@ class RandoForest:
         f1s = []
         cm = np.zeros(shape = (self.runs, len(dep.unique()), len(dep.unique())))
         
+        # for i in range(self.runs):
+        #     x_train, x_test, y_train, y_test = train_test_split(self.spectra,self.labels[self.labels_col], test_size= 0.3, stratify = self.labels[self.labels_col])
+        #     run= perform_rfc(x_train, x_test, y_train, y_test,hyperparameters=self.hyperparams, classes = dep.unique())
+    
+        #     accuracies.append(run["accuracy"])
+        #     recalls.append(run["recall"])
+        #     precisions.append(run["precision"])
+        #     bal_accs.append(run["bal_acc"])
+        #     cm[i] = run["matrix"]
+        #     f1s.append(run["f1"])
+            
         for i in range(self.runs):
-            x_train, x_test, y_train, y_test = train_test_split(self.spectra,self.labels[self.labels_col], test_size= 0.3, stratify = self.labels[self.labels_col])
+            x_train, x_test, y_train, y_test = train_test_split(self.spectra,dep, test_size= 0.3, stratify = dep)
             run= perform_rfc(x_train, x_test, y_train, y_test,hyperparameters=self.hyperparams, classes = dep.unique())
     
             accuracies.append(run["accuracy"])
@@ -124,31 +136,35 @@ class RandoForest:
         cm_df = pd.DataFrame(np.mean(self.rfc_results["cm"], axis = 0))
 
         # Mask values that round to 0.00 for visula clarity
-        cm_masked = cm_df.map(lambda v: str(round(v, 2)) if v > 0 else "")
+        cm_masked = cm_df.map(lambda v: str(int(v*100)) if int(v*100) > 0 else "")
 
         # Make class labels list
-        dep = self.labels[self.labels_col]
-        #TODO: Adjust for class-site classifications not just class.
+        if len(self.labels.shape) >1:
+            dep = self.labels[self.labels_col]
+        else:
+            dep = self.labels
+
 
         # Plot the confusion matrix
         plt.close()
         plt.figure(figsize=(10, 8))
-        sns.heatmap(np.mean(self.rfc_results["cm"], axis = 0),
+        sns.set_theme(font = "Times New Roman")
+        sns.heatmap(np.mean(self.rfc_results["cm"], axis = 0)*100,
                     annot = cm_masked,
                     fmt = "s",
                     cmap ='Blues',
                     xticklabels = dep.unique(),
                     yticklabels = dep.unique(),
-                    annot_kws = {"size" : 7},
+                    annot_kws = {"size" : 12},
                     vmin = 0,
-                    vmax = 1
+                    vmax = 100
                     )
         plt.tight_layout(pad = 4, w_pad = 1, h_pad = 1)
         plt.xlabel('Predicted Labels')
-        plt.xticks(rotation = 90)
+        plt.xticks(rotation = 30)
         plt.ylabel('True Labels')
-        plt.title(f'Confusion Matrix for {self.labels_col} - RFC')
-        plt.savefig("./plots/RFC_cm.svg")
+        plt.title('Confusion Matrix  - RFC')
+        plt.savefig("./plots/RFC/RFC_cm.svg")
         plt.show()
 
 

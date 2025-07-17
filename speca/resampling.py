@@ -1,91 +1,114 @@
-#Resampling to other SRFs
-
+import os
+import glob
 import pandas as pd
-def choose_SRF(satellite, min_wavelength, max_wavelength):
-    ''' set the Spectral response Function to use for resampling. Options are: sentinel_2, landsat_9, superdove, dove, skysat.'''
-    if satellite == "sentinel_2":
-        sentinel_2_SRF = pd.read_csv(r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Spectral_Response_Functions\Sentinel2ABC_averaged_SPF.csv", index_col = "SR_WL")
-        sentinel_2_SRF = sentinel_2_SRF.dropna(axis = 1, how = "any") #drop all wavelengths that are not measured in all sets
-        sentinel_2_SRF = sentinel_2_SRF.loc[min_wavelength:max_wavelength,:]
-        resampling_SRF = sentinel_2_SRF
-    elif satellite == "landsat_9":
-        landsat_9_SRF = pd.read_csv(r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Spectral_Response_Functions\L9_OLI2_Ball_BA_RSR.v2-1.csv", index_col = "Wavelength")
-        landsat_9_SRF.index= landsat_9_SRF.index.astype("int64")
-        landsat_9_SRF = landsat_9_SRF.loc[min_wavelength:max_wavelength,:]
-        resampling_SRF = landsat_9_SRF
-    elif satellite == "superdove":
-        superdove_SRF = pd.read_csv(r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Spectral_Response_Functions\Superdove.csv" , index_col = "Wavelength (nm)")
-        superdove_SRF.index= superdove_SRF.index.astype("int64")
-        superdove_SRF = superdove_SRF.loc[min_wavelength:max_wavelength,:]
-        resampling_SRF = superdove_SRF
-    elif satellite == "dove":
-        dove_SRF = pd.read_csv(r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Spectral_Response_Functions\dove_r.csv", index_col = "Wavelength (nm)")
-        dove_SRF.index= dove_SRF.index.astype("int64")
-        dove_SRF = dove_SRF.loc[min_wavelength:max_wavelength,:]
-        resampling_SRF = dove_SRF
-    elif satellite == "skysat":
-        skysat_SRF = pd.read_csv(r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Spectral_Response_Functions\Skysat_RSR_Skysat14-SkySat19.csv", index_col = "Wavelength (nm)")
-        skysat_SRF.index= skysat_SRF.index.astype("int64")
-        skysat_SRF = skysat_SRF.loc[min_wavelength:max_wavelength,:]
-        resampling_SRF = skysat_SRF
-    else:
-        print("Not a supported satellite. Try again.")
-    return resampling_SRF
+import numpy as np
 
-#Import data
-spectra = pd.read_csv(r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\MEL_NZ_TAS_spectra.csv")
-
-#drop any columns with nan values (i.e., limit to wavelengths covered by both sensors)
-spectra = spectra.dropna(axis = 1, how = "any") #drop any nan columns
-
-#make labels columns to re-append at end
-front_cols = spectra.iloc[:,0:3]
-
-#select only numerical data
-spectra = spectra.select_dtypes(include = "number")
-spectra = spectra.transpose()
-
-#match index formats of the SRFs
-spectra.index= spectra.index.astype("int64")
-n_samples = len(spectra.columns)
-
-#Define Wavelength range to use
-min_wavelength = min(spectra.index)
-max_wavelength = max(spectra.index)
-
-#define the satellites of interest
-satellites = ["sentinel_2", "landsat_9", "superdove", "dove", "skysat"]
-
-#for loop to resample for each satellite
-for satellite in satellites:
-	#Create placeholder for results
-	response_denom = []
-
-	#calculate the total sensor response per band to be the denominator
-	resampling_SRF = choose_SRF(satellite, min_wavelength, max_wavelength)
-	for band in range(0, len(resampling_SRF.columns)):
-		denom = resampling_SRF.iloc[:, band].sum()
-		response_denom.append(denom)
-
-	#Create placeholder for resampling results
-	resampled_data = {}
-
-	#resample each spectrum
-	for n in range(0, n_samples):
-		#testing multiplying the SRF dataframe by a single spectrum
-		one_sample = spectra.iloc[:, n]  #extract one sample for testing
-		signal = resampling_SRF.mul(one_sample, axis=0) #multiply SRf dataframe by that column
-		signal_numerators = signal.sum() #sum by SRF band
-		#n=4 #index of column used, for labeling below
-		resampled_data[f"spectrum_{n}"] = (signal_numerators/response_denom) #add entry to dictionary
-    #Make dataframe from dict and transpose
-	resampled = pd.DataFrame(resampled_data).transpose()
+def get_rsr_functions(rsr_dir:str) -> dict:
+    """When pointed to a directory with relative spectral response functions, makes a dictionary with the read-in data and sensors as keys.
     
-    #Re-format dataframe for export
-	resampled = resampled.reset_index(names="sample")
-	resampled = resampled.dropna(axis = 1, how = "any")
-	to_export = pd.concat([front_cols, resampled.drop(["sample"], axis = 1)], axis = 1)
- 
-	#output to csv file
-	out_path = r"C:\Users\s4770224\Documents\coding\Spectral_analysis\Combined_analysis\Resampled\\"+ satellite +".csv"
-	to_export.to_csv(out_path, index = False)
+    Args: 
+        directory (str): Relative path to the directory with RSR function definition files as .csv
+    
+    Returns:
+        dict: Dictionary with RSR filenames as keys and RSR functions as Dataframe values.
+    """
+    
+    functions = {}
+    for file in glob.glob(os.path.join(rsr_dir, "*.csv")):
+        #remove the .csv extension
+        filename = os.path.basename(file)[:-4]
+        # read in the data
+        data = pd.read_csv(file, index_col=0)
+        functions[filename] = data
+    return functions
+
+def resample_spectra(spectra:pd.DataFrame, rsr_function:pd.DataFrame) -> np.ndarray:
+    """
+    Spectrally resample spectra to a relative spectral response (RSR).
+
+    Args:
+        spectra (pd.DataFrame): Full resolution spectra: samples as rows, wavelengths as cols.
+        rsr_function (pd.DataFrame): RSR: wavelengths as rows, bands as cols.
+
+    Returns:
+        np.ndarray: Resampled data as a 2D numpy array where rows correspond to samples and columns to satellite sensor bands.
+    """
+    
+    # Transpose to wavelengths as rows like rsr functions
+    spectra = spectra.transpose()
+
+    #match index formats of the SRFs
+    spectra.index= spectra.index.astype("int64")
+    n_samples = len(spectra.columns)
+
+    #Define Wavelength range to use
+    min_wavelength = min(spectra.index)
+    max_wavelength = max(spectra.index)
+
+    # Trim RSR to wavelength range of the spectra
+    resampling_SRF = rsr_function.loc[min_wavelength:max_wavelength, :]
+
+    # Calculate the total sensor response per band
+    response_denom = list(np.sum(resampling_SRF, axis = 0)) 
+    
+    #Create placeholder for resampling results
+    resampled_data = np.zeros(shape=(n_samples, resampling_SRF.shape[1]),dtype=float)
+    
+    #resample each spectrum
+    for n in range(n_samples):
+        #testing multiplying the SRF dataframe by a single spectrum
+        #extract one sample for testing
+        one_sample = spectra.iloc[:, n]
+
+        #multiply SRf dataframe by sample
+        signal = resampling_SRF.mul(one_sample, axis=0)
+
+        #sum by SRF band
+        signal_numerators = signal.sum()
+
+        #n=4 #index of column used, for labeling below
+        #add entry to dictionary
+        resampled_data[n] = (signal_numerators/response_denom).T
+    
+    return resampled_data
+
+def export_resampled_data(resampled_data, sensor_name, out_dir):
+    """
+    Exports the resampled data to a CSV file.
+
+    Args:
+        Resampled_data (np.ndarray): The resampled data to be saved.
+        sensor_name (str): The name of the sensor being resampled to.
+        output_directory (str): Where to save the resampled data.
+    """
+    # Create output directory if it doesn't exist
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+    # Define output file path
+    output_file = os.path.join(out_dir, f"{sensor_name}_resampled.csv")
+
+    # Convert resampled data to DataFrame
+    resampled_df = pd.DataFrame(resampled_data)
+
+    # Save to CSV
+    resampled_df.to_csv(output_file, index=False)
+    
+    print(f"Resampled data for {sensor_name} saved to {output_file}")
+
+def resample_to_all(rsr_dir: str, spectra, out_dir):
+    """
+    Resamples spectra to all SRFs in a directory. Saves the resampled data to csv files.
+    
+    Args: 
+        rsr_dir (str): Directory containing the relative spectral response functions (SRFs).
+        spectra (pd.DataFrame): DataFrame containing the spectra to be resampled.
+        out_dir (str): Directory where the resampled data will be saved.
+    """
+    rsr_functions = get_rsr_functions(rsr_dir)
+    
+    for sensor_name, rsr_function in rsr_functions.items():
+        print(f"Resampling to {sensor_name}...")
+        resampled_data = resample_spectra(spectra, rsr_function)
+        export_resampled_data(resampled_data, sensor_name, out_dir)
+    print("Resampling completed for all sensors.")

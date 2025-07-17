@@ -83,7 +83,7 @@ class Visualizer:
         
         # For each group, site: make stats dict
         for species in basic_group:
-            spec_targets = spectra_to_use[spectra_to_use["Class"] == species]
+            spec_targets = spectra_to_use[spectra_to_use[grouping] == species]
             if plot_by_site: 
                 sites = spec_targets["site"].unique()
                 for site in sites:
@@ -122,6 +122,7 @@ class Visualizer:
             filtered_list = [item for item in filtered_list if all(word in item for word in search_sites)]
 
         sns.set_palette("tab20")
+        sns.set_theme(font = "Times New Roman")
         plt.clf()
         for w in filtered_list:
             # Plot with error bars
@@ -136,7 +137,7 @@ class Visualizer:
         plt.ylabel('Log(Standardized Reflectance)')
         plt.xticks([num for num in range(self.start_nm, self.end_nm +1, 100)])
         if save_plot:
-            plot_name = rf'C:\Users\s4770224\Documents\coding\Spectral_analysis\Plots\drafts\{search_words}.png'
+            plot_name = rf'.\plots\profiles\{search_words}.png'
             plt.savefig(plot_name)
         plt.show()
         return

@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def calc_class_averages(data, labels, label_col):
+def calc_class_averages(data, labels, labels_col, average_by_site = False):
     """
     Calculate class averages for the unique labels in the dataset.
     
@@ -12,13 +12,23 @@ def calc_class_averages(data, labels, label_col):
     if data.shape[0] != labels.shape[0]:
         raise ValueError("The number of rows in data and labels must match.")
     
-    select_labels = labels[label_col]
-    combined = pd.concat([select_labels, data], axis=1)
-    reduced = pd.pivot_table(combined,
-                             index = label_col,
-                             values = combined.columns[1:],
-                             aggfunc = 'mean',
-                             )
+    if average_by_site is True:
+        select_labels = pd.DataFrame(labels.apply(lambda x: f"{x[labels_col]}-{x['site']}", axis=1))
+        select_labels.columns = ["class-site"]
+        combined = pd.concat([select_labels, data], axis=1)
+        reduced = pd.pivot_table(combined,
+                                index = ["class-site"],
+                                values = combined.columns[1:],
+                                aggfunc = 'mean',
+                                )
+    else:
+        select_labels = labels[labels_col]
+        combined = pd.concat([select_labels, data], axis=1)
+        reduced = pd.pivot_table(combined,
+                                index = labels_col,
+                                values = combined.columns[1:],
+                                aggfunc = 'mean',
+                                )
     return reduced
 
 def sort_classes(spectra, labels, labels_col = "Class", sort_order = None): 
@@ -76,4 +86,9 @@ def sort_classes(spectra, labels, labels_col = "Class", sort_order = None):
     spectra = data.select_dtypes(include="number")
     return spectra, labels
 
-    
+def make_compound_labels(labels, columns):
+    """
+    Make compound labels from two existing columns.
+    """
+    compound_labels = labels.apply(lambda x: f"{x[columns[0]]}-{x[columns[1]]}", axis=1)
+    return compound_labels

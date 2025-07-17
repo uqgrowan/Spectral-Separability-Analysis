@@ -160,3 +160,5 @@ cython_debug/
 #.idea/
 pvclust.py
 /plots
+/data
+/satellite_RSRs

@@ -103,7 +103,8 @@ class Visualizer:
                           search_words,
                           mode,
                           search_sites = None,
-                          save_plot = False):
+                          save_plot = False,
+                          vbars = []):
         """ 
         Plots the mean with standard deviation shaded of the search terms.
         Optional filtering to limit by site if class stats were by site.
@@ -130,6 +131,7 @@ class Visualizer:
             plotting_data.index = plotting_data.index + self.start_nm       
             plt.plot(plotting_data.index, plotting_data['mean'], "-", label = w)  
             plt.fill_between(plotting_data.index, plotting_data['lower'], plotting_data['upper'], alpha=0.2)
+        plt.vlines(x= vbars, ymin = 0, ymax = 1)
         plt.tight_layout(pad = 4, w_pad= 1, h_pad= 1)
         plt.title("Mean reflectance spectra +/- st.dev")
         plt.xlabel('wavelength (nm)')
@@ -137,7 +139,7 @@ class Visualizer:
         plt.ylabel('Log(Standardized Reflectance)')
         plt.xticks([num for num in range(self.start_nm, self.end_nm +1, 100)])
         if save_plot:
-            plot_name = rf'.\plots\profiles\{search_words}.png'
+            plot_name = rf'.\plots\profiles\{search_words}.svg'
             plt.savefig(plot_name)
         plt.show()
         return

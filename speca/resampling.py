@@ -69,6 +69,8 @@ def resample_spectra(spectra:pd.DataFrame, rsr_function:pd.DataFrame) -> np.ndar
         #n=4 #index of column used, for labeling below
         #add entry to dictionary
         resampled_data[n] = (signal_numerators/response_denom).T
+    resampled_data = pd.DataFrame(resampled_data)
+    resampled_data.dropna(axis =1, how = "all",inplace = True)
     
     return resampled_data
 
@@ -88,11 +90,8 @@ def export_resampled_data(resampled_data, sensor_name, out_dir):
     # Define output file path
     output_file = os.path.join(out_dir, f"{sensor_name}_resampled.csv")
 
-    # Convert resampled data to DataFrame
-    resampled_df = pd.DataFrame(resampled_data)
-
     # Save to CSV
-    resampled_df.to_csv(output_file, index=False)
+    resampled_data.to_csv(output_file, index=False)
     
     print(f"Resampled data for {sensor_name} saved to {output_file}")
 

@@ -104,6 +104,13 @@ class PreprocessRefl:
         labels.loc[labels["Class"].isin (all_non_kelp_autos), "kom"] = "other"
         labels.loc[labels["Class"].isin (mineral), "kom"] = "mineral"
         labels.loc[labels["Class"].isin (whites), "kom"] = "wr"
+        
+        #Kelp/Browns/Other-autos/Mineral grouping
+        labels.loc[labels["Class"].isin (kelp), "kbom"] = "kelp"
+        labels.loc[labels["Class"].isin (brown_non_kelp), "kbom"] = "other_brown_alg"
+        labels.loc[labels["Class"].isin (non_brown_autos), "kbom"] = "other"
+        labels.loc[labels["Class"].isin (mineral), "kbom"] = "mineral"
+        labels.loc[labels["Class"].isin (whites), "kbom"] = "wr"
 
         #Browns/Other-autos/Mineral grouping
         labels.loc[labels["Class"].isin (brown_algae), "bom"] = "brown_algae"

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import minmax_scale
-import speca.auxiliary as aux
+import auxiliary as aux
 
 class PreprocessRefl:
     """
@@ -166,7 +166,7 @@ class PreprocessRefl:
             self.target_classes = self.labels["Class"].unique()
         elif self.target_scheme == "browns":
             self.target_classes = ['ecklonia', 'cystophora', 'macrocystis', 'carpophyllum','durvillaea', 'undaria', 'phyllospora', 'acrocarpia', 'hormosira', 'petalonia', 'sargassum', 'scytosiphon']
-        elif self.target_scheme == "farm":
+        elif self.target_scheme == "farm": 
             self.target_classes = ['macrocystis', 'carpophyllum','filamentous_rhodophyte', 'undaria']
         elif self.target_scheme == "all_macros":
             self.target_classes = ['acrocarpia', 'carpophyllum', 'cystophora', 'durvillaea', 'ecklonia','filamentous_rhodophyte', 'frondose_rhodophyte', 'hormosira', 'macrocystis','petalonia', 'phyllospora','sargassum','scytosiphon', 'ulva', 'undaria']

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import minmax_scale
-import auxiliary as aux
+import auxilliary.tools as aux
 
 class PreprocessRefl:
     """

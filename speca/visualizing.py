@@ -29,6 +29,7 @@ class Visualizer:
         min_vals = []
         max_vals = []
         counts = []
+        bands = []
         data = data.select_dtypes(include="number")
         num_bands = len(data.columns)
         # Loop through each column (wavelength) in the dataset
@@ -39,6 +40,7 @@ class Visualizer:
             min_val = np.min(column_data)
             max_val = np.max(column_data)
             count = len(column_data)
+            band = data.columns[i]
 
             # Append calculated statistics to respective lists
             means.append(mean_val)
@@ -46,9 +48,10 @@ class Visualizer:
             min_vals.append(min_val)
             max_vals.append(max_val)
             counts.append(count)
+            bands.append(band)
 
         # Create a dictionary of calculated statistics
-        stats = {'mean': means, 'st_dev': std_devs, 'minimum': min_vals, 'maximum': max_vals, 'count' :counts}
+        stats = {'mean': means, 'st_dev': std_devs, 'minimum': min_vals, 'maximum': max_vals, 'count' :counts, "bands" : bands}
 
         # Create a DataFrame from the statistics dictionary
         stats_df = pd.DataFrame(stats)
@@ -129,12 +132,12 @@ class Visualizer:
             # Plot with error bars
             plotting_data = pd.DataFrame(stats_dict[w])
             plotting_data.index = plotting_data.index + self.start_nm       
-            plt.plot(plotting_data.index, plotting_data['mean'], "-", label = w)  
+            plt.plot(plotting_data["bands"], plotting_data['mean'], "-", label = w)  
             plt.fill_between(plotting_data.index, plotting_data['lower'], plotting_data['upper'], alpha=0.2)
         plt.vlines(x= vbars, ymin = 0, ymax = 1)
         plt.tight_layout(pad = 4, w_pad= 1, h_pad= 1)
         plt.title("Mean reflectance spectra +/- st.dev")
-        plt.xlabel('wavelength (nm)')
+        plt.xlabel('Wavelength (nm)')
         plt.legend(loc = "upper left")
         plt.ylabel('Log(Standardized Reflectance)')
         plt.xticks([num for num in range(self.start_nm, self.end_nm +1, 100)])

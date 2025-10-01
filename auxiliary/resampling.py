@@ -70,7 +70,7 @@ def resample_spectra(spectra:pd.DataFrame, rsr_function:pd.DataFrame, minimum_re
    
     return resampled_data
 
-def export_resampled_data(resampled_data, sensor_name, out_dir):
+def export_resampled_data(resampled_data, sensor_name, out_dir, prefix = None):
     """
     Exports the resampled data to a CSV file.
 
@@ -84,14 +84,17 @@ def export_resampled_data(resampled_data, sensor_name, out_dir):
         os.makedirs(out_dir)
 
     # Define output file path
-    output_file = os.path.join(out_dir, f"{sensor_name}_resampled.csv")
+    if prefix: 
+        output_file = os.path.join(out_dir, f"{prefix}_{sensor_name}_resampled.csv")
+    else:
+        output_file = os.path.join(out_dir, f"{sensor_name}_resampled.csv")
 
     # Save to CSV
     resampled_data.to_csv(output_file, index=True)
     
     print(f"Resampled data for {sensor_name} saved to {output_file}")
 
-def resample_to_all(rsr_dir: str, spectra, out_dir, minimum_response_trim = 0):
+def resample_to_all(rsr_dir: str, spectra, out_dir, minimum_response_trim = 0, prefix = None):
     """
     Resamples spectra to all SRFs in a directory. Saves the resampled data to csv files.
     
@@ -108,7 +111,7 @@ def resample_to_all(rsr_dir: str, spectra, out_dir, minimum_response_trim = 0):
     for sensor_name, rsr_function in rsr_functions.items():
         print(f"Resampling to {sensor_name}...")
         resampled_data = resample_spectra(spectra, rsr_function, minimum_response_trim = minimum_response_trim)
-        export_resampled_data(resampled_data, sensor_name, out_dir)
+        export_resampled_data(resampled_data, sensor_name, out_dir, prefix= prefix)
         
     for file in glob.glob(os.path.join(out_dir, "*.csv")):
         #remove the .csv extension

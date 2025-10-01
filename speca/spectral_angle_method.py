@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, accuracy_score, balanced_accuracy_score, recall_score, precision_score, f1_score
 import seaborn as sns
-import auxilliary.auxiliary as aux
+import auxiliary.tools as aux
 
 def calculate_arccosine_of_dot_product(vector1, vector2):
     """

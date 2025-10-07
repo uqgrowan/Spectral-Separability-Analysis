@@ -3,11 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
-from sklearn.preprocessing import StandardScaler
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import f1_score, confusion_matrix
-
-
 
 # =============================================================================
 # Step 6: Linear Discriminant Analysis (LDA)
@@ -59,7 +56,7 @@ def LDA_plot_comps(X_lda, labels, components = [0,1,2]):
     if len(components) == 3:
         
         # Plot three LDA components
-        fig = plt.figure(figsize=(8, 7))
+        fig = plt.figure(figsize=(14, 10))
         ax = fig.add_subplot(projection='3d')
         x, y, z = components
         colors = plt.cm.tab20(np.linspace(0, 1, len(unique_categories)))
@@ -76,7 +73,7 @@ def LDA_plot_comps(X_lda, labels, components = [0,1,2]):
     elif len(components) == 2:
         
         # Plot two LDA components
-        plt.figure(figsize=(8, 7))
+        plt.figure(figsize=(14, 10))
         colors = plt.cm.tab20(np.linspace(0, 1, len(unique_categories)))
         x, y = components
         for i, category in enumerate(unique_categories):
@@ -115,7 +112,7 @@ def LDA_plot_cm(cm, labels):
     # Confusion matrix
     cm_df= pd.DataFrame(cm)
     cm_masked = cm_df.map(lambda v: str(int(v*100)) if int(v*100) >0 else "")
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(14, 10))
     sns.heatmap(cm,
                 annot= cm_masked,
                 cmap='Blues',

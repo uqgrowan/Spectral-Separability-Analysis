@@ -22,6 +22,7 @@ def perform_rfc(x_train, x_test, y_train, y_test, classes, hyperparameters = Non
     results["precision"] = precision_score(y_test, predictions, average = "weighted", zero_division=np.nan)
     results["bal_acc"] = balanced_accuracy_score(y_test, predictions)
     results["f1"]= f1_score(y_test, predictions, average = "macro", zero_division=np.nan)
+    results["importances"] = rf.feature_importances_
     return results
 
 
@@ -32,7 +33,7 @@ class RandoForest:
     def __init__(self,
                  spectra,
                  labels,
-                 labels_col = None,
+                 #labels_col = None,
                  runs = 100):
         """
         Initialize the random forest classifier class.
@@ -42,7 +43,7 @@ class RandoForest:
         """
         self.spectra = spectra
         self.labels = labels
-        self.labels_col = labels_col if labels_col is not None else "Class"
+        #self.labels_col = labels_col if labels_col is not None else "Class"
         self.runs = runs
         
         # Placeholders for later
@@ -68,7 +69,7 @@ class RandoForest:
                             cv=3,
                             n_jobs=-1)
 
-        params_grid.fit(self.spectra, self.labels[self.labels_col])
+        params_grid.fit(self.spectra, self.labels)  #[self.labels_col]
         print(f" Best parameters: {params_grid.best_params_}")
         print(f" Best score: {params_grid.best_score_}")
         self.hyperparams = params_grid.best_params_
@@ -77,11 +78,12 @@ class RandoForest:
         """"
         Aggregate the various scores of many runs of the random forest classifier
         """
-        if len(self.labels.shape) >1:
-            dep = self.labels[self.labels_col]
-        else:
-            dep = self.labels
+        # if len(self.labels.shape) >1:
+        #     dep = self.labels #[self.labels_col]
+        # else:
+        #     dep = self.labels
 
+        dep = self.labels
         # Create placeholder variables
         accuracies = []
         recalls = []
@@ -89,6 +91,7 @@ class RandoForest:
         bal_accs = []
         f1s = []
         cm = np.zeros(shape = (self.runs, len(dep.unique()), len(dep.unique())))
+        importances = []
         
         # for i in range(self.runs):
         #     x_train, x_test, y_train, y_test = train_test_split(self.spectra,self.labels[self.labels_col], test_size= 0.3, stratify = self.labels[self.labels_col])
@@ -110,13 +113,15 @@ class RandoForest:
             precisions.append(run["precision"])
             bal_accs.append(run["bal_acc"])
             cm[i] = run["matrix"]
+            importances.append(run["importances"])
+            
             f1s.append(run["f1"])
     
-        print(f"Mean accuracy for {self.labels_col} is {np.mean(accuracies)}.")
-        print(f"Mean recall for {self.labels_col} is {np.mean(recalls)}.")
-        print(f"Mean precision for {self.labels_col} is {np.mean(precisions)}.")
-        print(f"Mean balanced accuracy for {self.labels_col} is {np.mean(bal_accs)}.")
-        print(f"Mean F1 score for {self.labels_col} is {np.mean(f1s)}.")
+        print(f"Mean accuracy for {self.labels.name} is {np.mean(accuracies)}.") #{self.labels_col}
+        print(f"Mean recall is {np.mean(recalls)}.") #{self.labels_col}
+        print(f"Mean precision is {np.mean(precisions)}.") #for {self.labels_col}
+        print(f"Mean balanced accuracy  is {np.mean(bal_accs)}.") #for {self.labels_col}
+        print(f"Mean F1 score is {np.mean(f1s)}.") #for {self.labels_col} 
         
         self.rfc_results = {
             "accuracies" : accuracies,
@@ -124,7 +129,8 @@ class RandoForest:
             "precisions" : precisions,
             "balanced accuracies" : bal_accs,
             "cm" : cm,
-            "f1_scores": f1s
+            "f1_scores": f1s,
+            "importances" : importances
         }
 
 
@@ -138,12 +144,7 @@ class RandoForest:
         # Mask values that round to 0.00 for visula clarity
         cm_masked = cm_df.map(lambda v: str(int(v*100)) if int(v*100) > 0 else "")
 
-        # Make class labels list
-        if len(self.labels.shape) >1:
-            dep = self.labels[self.labels_col]
-        else:
-            dep = self.labels
-
+        dep = self.labels
 
         # Plot the confusion matrix
         plt.close()
@@ -161,7 +162,7 @@ class RandoForest:
                     )
         plt.tight_layout(pad = 4, w_pad = 1, h_pad = 1)
         plt.xlabel('Predicted Labels')
-        plt.xticks(rotation = 30)
+        # plt.xticks(rotation = 30)
         plt.ylabel('True Labels')
         plt.title('Confusion Matrix  - RFC')
         plt.savefig("./plots/RFC/RFC_cm.svg")

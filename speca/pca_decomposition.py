@@ -38,11 +38,11 @@ def find_kaiser(explained_variance):
 
 class NCompsByAccuracy:
     
-    def __init__(self, pca_spectra, labels, labels_col="Class"):
+    def __init__(self, spectra, labels, labels_col="Class"):
         """
         Initialize the PCA decomposition class.
         """
-        self.spectra = pca_spectra
+        self.spectra = spectra
         self.labels = labels
         self.labels_col = labels_col
         self.accuracy_results = None
@@ -137,14 +137,14 @@ class NCompsByAccuracy:
         else:
             # Case where threshold is never met
             results["n"] = 1000
-            results["Accuracy at n"] = float(df.loc[t-1])
-            results["Accuracy at n+1"] = float(df.loc[t])
+            results["Accuracy at n"] = float(df.iloc[-1])
+            results["Accuracy at n+1"] = float(df.iloc[-1])
    
         if verbose is True:
             if mask.any():
                 print(f"Optimal components by marginal gain: {t-1}")
             else:
-                print("Marginal gain threshold unmet with all components.")
+                print(f"Marginal gain threshold unmet with all {df.shape[1]}components.")
 
         # Convert results to DataFrame all at once
         return results

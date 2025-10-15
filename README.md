@@ -1,5 +1,5 @@
 # Speca: Spectral separability analysis
-Investigate the separability of targets' spectral reflectance profiles. Includes pre-processing, visualization, and required auxiliary functionalities.
+Investigate the separability of targets' spectral reflectance profiles. Includes pre-processing, resampling, visualization, and required auxiliary functionalities.
 
 ---
 
@@ -54,31 +54,41 @@ It is broken up into the sections below:
 - Aggregate results of many random forests conducted on differing train-test sample divisions
 - Plot the confusion matrix of the classification results
 
+### 💥Linear Discriminant Analysis
+
+- Conduct a linear discriminant analysis classification
+- Plot the confusion matrix of the classification results, and the standard deviation of results across runs
+- Plot the samples using 2 or 3 components
+
 ---
 
 ## Prerequisites 📰
 
 - Python 3.12 or higher
-- pvclust
+- pvclust (installed and available in the working directory)
 
 ---
 
 ## 📋 Usage
 
-### IDE - Jupyter Notebook
+### IDE - Jupyter Notebooks
 
-For the most intuitive application of the script, the `spectral_separability.ipynb` is provided with step-by-step example implementation.
+For the most intuitive application of the script, three Jupyter notebooks are provided with step-by-step example implementation.
+
+- `prepare_data.ipynb` includes data cleaning, labelling, denoising, filtering, and standardization options
+- `spectral_separability.ipynb` includes visualization and four classifier implementations (hierarchical clustering, spectral angle method, random forest classification, and linear discriminant clssification).
+- `spectral_stats.ipynb` includes feature selection and correlation filtering, assumption checks for parametric stats, and stats tests.
 
 ### CLI
 
-Not yet supported.
+Most functionality is contained in python scripts structured as classes. Command parsing has not yet been implemented.
 
 ---
 
 ## 💡 Notes
 
 - **Class hardcoding**: If you are re-using this repository to analyse spectra for different targets, the list of target classes being used in various functions will need to be altered to your specific needs. These include:
-`preprocessing.assign_targets_list`, `preprocessing.make_new_labels`, and `auxiliary.sort_classes`
+`auxiliary.preprocessing.assign_targets_list`, `auxiliary.preprocessing.make_new_labels`, and `auxiliary.tools.sort_classes`
 
 ---
 

@@ -23,8 +23,9 @@ def run_pca(spectra, n_comps = 15):
         raise ValueError("Spectra data contains non-numeric columns. PCA requires numeric data only.")
     deco = PCA(n_comps)
     deco.fit(spectra)
-    comps = deco.transform(spectra)
-    return comps, deco.explained_variance_ratio_, deco.explained_variance_
+    decomposed = deco.transform(spectra)
+    comps = deco.components_
+    return decomposed, deco.explained_variance_ratio_, deco.explained_variance_, comps
 
 def find_elbow(explained_variance_ratio):
     """Find the elbow point using the kneedle algorithm"""

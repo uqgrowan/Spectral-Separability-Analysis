@@ -111,7 +111,7 @@ class LinearMixing:
         results = np.stack(results_list)  # Combine at the end
         return results, fpcs
         
-    def format_sim_results(self, results):
+    def format_sim_results(self, results, fpc_dict):
         """
         Reformat the simulation results into a DataFrame with appropriate column names.
         """
@@ -119,4 +119,12 @@ class LinearMixing:
             results = results[:,0,:]
         results_df = pd.DataFrame(results, columns=self.material_spectra.columns[1:])
         
-        return results_df
+        covers_df = pd.DataFrame(0, index = fpc_dict.keys(), columns= self.materials.keys(), dtype = float)
+        for pixel, components in fpc_dict.items():
+            for material in components.keys():
+                covers_df.loc[pixel, material] = float(components[material])
+            # covers_df.loc[pixel, "components_count"] = len(components.keys())               
+        covers_df["water"] = 1 - covers_df.sum(axis=1)
+        covers_df["non-water_comps"] = covers_df.astype(bool).sum(axis=1)-1
+             
+        return results_df, covers_df

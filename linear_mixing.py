@@ -4,13 +4,14 @@ from random import getrandbits, shuffle, random
 
 class LinearMixing:
     
-    def __init__(self, materials = dict, cover_ranges = list, pixels = int, material_spectra= pd.DataFrame, water_spectra = pd.DataFrame):
+    def __init__(self, materials = dict, cover_ranges = list, odds_dict = dict, pixels = int, material_spectra= pd.DataFrame, water_spectra = pd.DataFrame):
         """
         Initialize the LinearMixing model.
 
         Parameters:
         materials_spectra (pd.DataFrame): DataFrame where each column represents a material's spectral signature.
         cover_ranges (dict): Dictionary with material categories as keys and tuples of (min_cover, max_cover) as values.
+        odds_dict (dict): Dictionary of tuples with the first value being the bit size to pass to make a random value, and the second being the value the random integer must be larger than for a material to be included in a pixel. e.g. (1, 0) for 50-50 odds, (3, 5) for 25% odds of inclusion
         materials (dict): Dictionary with material categories as keys and the assigned classes lists as values.
         pixels (int): number of pixels to simulate
         """
@@ -23,15 +24,18 @@ class LinearMixing:
             cat: material_spectra[material_spectra["Class"].isin(classes)]
             for cat, classes in self.materials.items()
         }
+        self.odds_dict = odds_dict if not None else {cat: (1, 0) for cat in self.materials.keys()}
     
     def choose_materials(self):
         """
-        Binary random determination of presence/absence in the pixel for each material (50-50 odds).
+        Binary random determination of presence/absence in the pixel for each material (default : 50-50 odds).
+        
         
         Outputs
         present_materials (list): List of material categories present in the pixel.
         """
-        return [cat for cat in self.materials if getrandbits(1)]
+        
+        return [cat for cat in self.materials if getrandbits(self.odds_dict[cat][0]) > self.odds_dict[cat][1]]
 
     def generate_random_compositions(self, present_materials):
         """

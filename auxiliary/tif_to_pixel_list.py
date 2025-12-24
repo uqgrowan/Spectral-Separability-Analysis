@@ -41,11 +41,12 @@ for file in files:
     print(f"Image being added is of shape: {image.shape}")
     print(f"Pixels being added to array of shape: {pixels.shape}")
     pixels = pd.concat([pixels, image], ignore_index=True)
+    print(f" {pixels.shape[0]} pixels loaded.")
     
 pixels.drop_duplicates(inplace = True)    
 pixels.shape
 
-pixel_sample = pixels.sample(n=1000000, replace = False)
+pixel_sample = pixels.sample(n=100000, replace = False)
 pixel_sample.shape
 
 pixel_sample.to_csv('C:/Users/s4770224/Documents/Work/geospatial_analysis/water_sampling/Enmap/Enmap_pixel_samples.csv', index = False)

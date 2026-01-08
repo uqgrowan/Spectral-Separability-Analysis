@@ -131,7 +131,7 @@ class NCompsByAccuracy:
         mask = diff[diff.abs()<thresh]
 
         if mask.any():
-            t = mask.idxmax()  # First True index
+            t = mask.index[0]  # First True index
             results["n"] = t-1
             results["Accuracy at n"] = float(df.loc[t-1])
             results["Accuracy at n+1"] = float(df.loc[t])

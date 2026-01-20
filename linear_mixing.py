@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from random import getrandbits, shuffle, random
+from random import getrandbits, shuffle, random, sample, randint
 
 class LinearMixing:
     
@@ -24,18 +24,24 @@ class LinearMixing:
             cat: material_spectra[material_spectra["Class"].isin(classes)]
             for cat, classes in self.materials.items()
         }
-        self.odds_dict = odds_dict if not None else {cat: (1, 0) for cat in self.materials.keys()}
+        self.odds_dict = odds_dict #if not None else {cat: (1, 0) for cat in self.materials.keys()}
     
-    def choose_materials(self):
+    def choose_materials(self, maximum_classes = 6):
         """
-        Binary random determination of presence/absence in the pixel for each material (default : 50-50 odds).
+        Binary random determination of presence/absence in the pixel for each material. If an odds dictionary is provided, classes will be included in the simulated pixels according to those odds. If no odds dictionary is provided, all classes will be simulated with 50-50 odds up to a user defined maximum number of classes. 
         
         
         Outputs
         present_materials (list): List of material categories present in the pixel.
         """
         
-        return [cat for cat in self.materials if getrandbits(self.odds_dict[cat][0]) > self.odds_dict[cat][1]]
+        if self.odds_dict: # is not None:
+            return [cat for cat in self.materials if getrandbits(self.odds_dict[cat][0]) > self.odds_dict[cat][1]]
+        else: 
+            k = randint(0, maximum_classes)
+            return sample(sorted(self.materials), k = k)
+            
+            
 
     def generate_random_compositions(self, present_materials):
         """

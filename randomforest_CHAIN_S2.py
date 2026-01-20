@@ -15,7 +15,7 @@ class Unmix_Pixels:
         self.classifiers = None
         self.regressors = None
     
-    def classify_and_append(self, classifier_params, plot):
+    def classify_and_append(self, classifier_params, plot, regressor_params):
         
         presence_probabilities = {
             "test": {},
@@ -23,15 +23,17 @@ class Unmix_Pixels:
         }
         
         # Predict water fraction and add to features
-        water_rfr = RandomForestRegressor(**classifier_params).fit(self.x_train, self.y_train.iloc[:, -1])
+        water_rfr = RandomForestRegressor(**regressor_params).fit(self.x_train, self.y_train.iloc[:, -1])
         self.x_train[100] = water_rfr.predict(self.x_train)
         self.x_test[100] = water_rfr.predict(self.x_test)
 
         self.water_regressor = water_rfr
         
-        if plot == "water" or plot == "both":    
+        if plot in ("water", "both"):
             plt.scatter(x = self.y_test.iloc[:, -1], y = self.x_test[100], marker = 'o', alpha = 0.4, c= "teal")
             plt.title("Water fraction regression")
+            plt.xlabel("True Water Fractional Abundance")
+            plt.ylabel("Predicted Water Fractional Abundance")
             plt.axline((0,0), slope = 1, color = "black", linestyle = "--")
             plt.show()
         
@@ -42,7 +44,7 @@ class Unmix_Pixels:
         # Predict presence/absence and add to features
         classifiers = {}
         for col in range(len(self.y_train.columns[:-1])):
-            rfc = RandomForestClassifier().fit(self.x_train.loc[:, :100], self.y_train.iloc[:,col]>0)
+            rfc = RandomForestClassifier(**classifier_params).fit(self.x_train.loc[:, :100], self.y_train.iloc[:,col]>0)
 
             test_probas = rfc.predict_proba(self.x_test.loc[:, :100]) 
             train_probas = rfc.predict_proba(self.x_train.loc[:, :100]) 
@@ -54,14 +56,14 @@ class Unmix_Pixels:
 
             classifiers[self.y_train.columns[col]] = rfc
             
-            if plot == "classifiers" or plot == "both":
+            if plot in ("classifier", "both"):
                 
                 plt.scatter(x = self.y_test.iloc[:, col], 
                             y = test_probas[:, 1], marker = 'o', alpha = 0.4, 
                             c = test_probas[:, 1] > self.presence_thresh, 
                             label = "Probability of Presence")
                 plt.scatter(x = self.y_test.iloc[:, col],
-                            y = test_probas[:, 1]> 0.5, 
+                            y = test_probas[:, 1]> 0.5,
                             alpha = 0.4,
                             c="red",
                             label = "Hard classification")
@@ -90,13 +92,13 @@ class Unmix_Pixels:
         for col in range(len(self.y_train.columns[:-1])):
             
             # Filter to only pixels with class present
-            test_presence_mask = self.x_test.loc[:, 101+col] > 0.5
-            train_presence_mask = self.x_train.loc[:, 101+col] > 0.5
+            test_presence_mask = self.x_test.loc[:, 101+col] 
+            train_presence_mask = self.x_train.loc[:, 101+col] 
             print(f"{self.y_train.columns[col]} present in {sum(test_presence_mask)} out of {len(test_presence_mask)} test pixels")
 
             print(f"Training set for {self.y_train.columns[col]} has {self.y_train.shape[0]} samples")
             
-            #Train regressor on all pixels
+            #Train regressor on all present pixels
             reg = RandomForestRegressor(**regressor_params).fit(self.x_train.loc[train_presence_mask,:100], self.y_train.loc[train_presence_mask, self.y_train.columns[col]])
             
             test_predictions = pd.Series(0.0, index = self.x_test.index)
@@ -134,9 +136,8 @@ class Unmix_Pixels:
         self.regressors = regressors
         return class_predictions
 
-    def unmix_new_data(self, new_pixels, new_fpcs):
+    def unmix_new_data(self, new_pixels, fpcs_columns):
         new_pixels = new_pixels.copy()
-        new_fpcs = new_fpcs.copy().set_index(new_pixels.index)
         
         # Predict water fraction and add to features
         new_pixels[100] = self.water_regressor.predict(new_pixels)
@@ -146,14 +147,14 @@ class Unmix_Pixels:
         for col, classifier in enumerate(self.classifiers.values()):
             new_probas = classifier.predict_proba(new_pixels.loc[:, :100]) 
             new_pixels[101+col] = new_probas[:, 1] > self.presence_thresh
-            classifications[new_fpcs.columns[col]] = pd.DataFrame(new_probas[:, 1], index = new_pixels.index)
+            classifications[fpcs_columns[col]] = pd.DataFrame(new_probas[:, 1], index = new_pixels.index)
         classifications["water"] = pd.DataFrame(new_pixels[100], index = new_pixels.index)
             
         # Predict fractional abundances
         predictions = {}
         for col, regressor in enumerate(self.regressors.values()):
             test_predictions = regressor.predict(new_pixels.loc[:, :100])
-            predictions[new_fpcs.columns[col]] = pd.DataFrame(test_predictions, index = new_pixels.index)
+            predictions[fpcs_columns[col]] = pd.DataFrame(test_predictions, index = new_pixels.index)
             
         return classifications, predictions
         

@@ -99,7 +99,9 @@ class Unmix_Pixels:
             print(f"Training set for {self.y_train.columns[col]} has {self.y_train.shape[0]} samples")
             
             #Train regressor on all present pixels
-            reg = RandomForestRegressor(**regressor_params).fit(self.x_train.loc[train_presence_mask,:100], self.y_train.loc[train_presence_mask, self.y_train.columns[col]])
+            # reg = RandomForestRegressor(**regressor_params).fit(self.x_train.loc[train_presence_mask,:100], self.y_train.loc[train_presence_mask, self.y_train.columns[col]])
+
+            reg = RandomForestRegressor(**regressor_params).fit(self.x_train.loc[:,:100], self.y_train.loc[:, self.y_train.columns[col]])
             
             test_predictions = pd.Series(0.0, index = self.x_test.index)
             present_test_idx  = self.x_test.loc[test_presence_mask].index

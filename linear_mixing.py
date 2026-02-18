@@ -1,14 +1,35 @@
+"""
+Class for pixel simulations through linear mixing
+"""
+
+from random import getrandbits, shuffle, random, sample, randint
 import numpy as np
 import pandas as pd
-from random import getrandbits, shuffle, random, sample, randint
+
 
 class LinearMixing:
+    """
+    Simulate pixels using linear mixing of endmembers according to randomly generated fractional percent covers. The presence of materials in the pixel can be determined by user defined odds, or by a random draw with a user defined maximum number of classes. The results are returned as a DataFrame with the simulated spectra, and separate DataFrames for the fractional percent covers and endmember indices used in each pixel. Additional functions allow for the simulation of single-class pixels and pure water pixels to improve low-FPC and absent detections.
+    
+    Args
+        materials (dict): Dictionary with material categories as keys and the assigned classes lists as values.
+        
+        cover_ranges (dict): Dictionary with material categories as keys and tuples of (min_cover, max_cover) as values.
+        
+        odds_dict (dict): Dictionary of tuples with the first value being the bit size to pass to make a random value, and the second being the value the random integer must be larger than for a material to be included in a pixel. e.g. (1, 0) for 50-50 odds, (3, 5) for 25% odds of inclusion
+        
+        pixels (int): Number of pixels to simulate
+        
+        material_spectra (pd.DataFrame): DataFrame where each column represents a material's spectral signature, and a "Class" column indicates the class of each spectrum.
+        
+        water_spectra (pd.DataFrame): DataFrame of water spectra to be used as the background endmember, with the same structure as material_spectra.
+    """
     
     def __init__(self, materials = dict, cover_ranges = list, odds_dict = dict, pixels = int, material_spectra= pd.DataFrame, water_spectra = pd.DataFrame):
         """
         Initialize the LinearMixing model.
 
-        Parameters:
+        Args:
         materials_spectra (pd.DataFrame): DataFrame where each column represents a material's spectral signature.
         cover_ranges (dict): Dictionary with material categories as keys and tuples of (min_cover, max_cover) as values.
         odds_dict (dict): Dictionary of tuples with the first value being the bit size to pass to make a random value, and the second being the value the random integer must be larger than for a material to be included in a pixel. e.g. (1, 0) for 50-50 odds, (3, 5) for 25% odds of inclusion
@@ -39,9 +60,7 @@ class LinearMixing:
             return [cat for cat in self.materials if getrandbits(self.odds_dict[cat][0]) > self.odds_dict[cat][1]]
         else: 
             k = randint(0, maximum_classes)
-            return sample(sorted(self.materials), k = k)
-            
-            
+            return sample(sorted(self.materials), k = k)    
 
     def generate_random_compositions(self, present_materials):
         """
@@ -120,7 +139,7 @@ class LinearMixing:
     
         results = np.stack(results_list)  # Combine at the end
         return results, fpcs, endmembers
-        
+    
     def format_sim_results(self, results, fpc_dict, endmembers):
         """
         Reformat the simulation results into a DataFrame with appropriate column names.
@@ -131,13 +150,81 @@ class LinearMixing:
         
         covers_df = pd.DataFrame(0, index = fpc_dict.keys(), columns= self.materials.keys(), dtype = float)
         endmembers_df = pd.DataFrame(np.nan, index = fpc_dict.keys(), columns= self.materials.keys(), dtype = float)
+
         for pixel, components in fpc_dict.items():
             for material in components.keys():
                 covers_df.loc[pixel, material] = float(components[material])
         covers_df['water'] = 1 - covers_df.sum(axis=1)
-                
+               
         for pixel, components in endmembers.items():
             for material in components.keys():
                 endmembers_df.loc[pixel, material] = float(components[material])
              
         return results_df, covers_df, endmembers_df
+    
+    def sim_single_class_pixels(self, single_pixel_count, start_value):
+        """
+        Simulate pixels with only one class and water to improve low-FPC and absent detections.
+        """
+        single_fpcs = pd.DataFrame(index = range(start_value, start_value + len(self.materials.keys())*single_pixel_count), columns=self.materials.keys(), dtype = "float")
+        single_fpcs["water"] = 0.0
+        single_endmembers = pd.DataFrame(index = range(start_value, start_value + len(self.materials.keys())*single_pixel_count), columns=self.materials.keys(), dtype = "int")
+        single_results_list = {}
+        
+        # Change indexing to not duplicate previous indices
+        first_index = start_value
+        
+        # For each allowed material type
+        for cat in self.materials.keys():
+            indices  = range(first_index, first_index + single_pixel_count) 
+            mixed_pixels = pd.DataFrame(index = indices, columns = self.material_spectra.columns[1:], dtype="float")
+            
+            # For each desired extra pixel simulation
+            for i in range(first_index, first_index + single_pixel_count):
+                
+                # Generate random FPC and water FPC, store both
+                frac_perc_cover = random()
+                single_fpcs.loc[i, cat] = frac_perc_cover
+                
+                water_fpc = (1- frac_perc_cover)
+                single_fpcs.loc[i, "water"] = water_fpc
+                
+                # Pick endmember, store
+                pixel_endmember = self.spectra_by_cat[cat].sample(n=1, axis = 0)
+                single_endmembers.loc[i, cat] = pixel_endmember.index[0] 
+                pixel_endmember = pixel_endmember.values.flatten()[1:]
+                                
+                # Pick a water endmember, store
+                water_endmember = self.water_spectra.sample(n=1, axis = 0)
+                single_endmembers.loc[i, "water"] = water_endmember.index[0]
+
+                # Mixe pixel, store
+                mixed_pixel = pixel_endmember * frac_perc_cover + water_endmember *water_fpc
+                mixed_pixels.loc[i, :] = mixed_pixel.values.flatten()
+
+            single_results_list[cat] = mixed_pixels
+            
+            # Advance the indexing for the next category's pixels
+            first_index += single_pixel_count
+
+        single_results_df = pd.concat((pd.DataFrame({**{'Code': key}, **value})\
+                for key, value in single_results_list.items()), ignore_index=False)
+        
+        return single_results_df, single_fpcs, single_endmembers
+       
+    def add_water_only_pixels(self, water_pixels_count, start_value):
+        " Add pure water pixels to the simulated datasets, with unique indices to avoid overlap with previous simulations."
+        idx = range(start_value, start_value + water_pixels_count)
+        
+        water_fpcs = pd.DataFrame(0, index=idx, columns=self.materials.keys(), dtype=float)
+        water_fpcs["water"] = 1.0
+        
+        # Sample all rows at once and re-index
+        sampled = self.water_spectra.sample(n=water_pixels_count, replace=False)
+        water_results_df = sampled.set_index(pd.Index(idx))
+        
+        water_endmembers = pd.DataFrame(np.nan, index=idx, columns=self.materials.keys(), dtype=float)
+        water_endmembers["water"] = sampled.index.values
+        
+        return water_results_df, water_fpcs, water_endmembers
+    

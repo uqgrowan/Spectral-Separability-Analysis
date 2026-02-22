@@ -162,54 +162,102 @@ class LinearMixing:
              
         return results_df, covers_df, endmembers_df
     
-    def sim_single_class_pixels(self, single_pixel_count, start_value):
-        """
-        Simulate pixels with only one class and water to improve low-FPC and absent detections.
-        """
-        single_fpcs = pd.DataFrame(index = range(start_value, start_value + len(self.materials.keys())*single_pixel_count), columns=self.materials.keys(), dtype = "float")
-        single_fpcs["water"] = 0.0
-        single_endmembers = pd.DataFrame(index = range(start_value, start_value + len(self.materials.keys())*single_pixel_count), columns=self.materials.keys(), dtype = "int")
-        single_results_list = {}
+    # def sim_single_class_pixels(self, single_pixel_count, start_value):
+    #     """
+    #     Simulate pixels with only one class and water to improve low-FPC and absent detections.
+    #     """
+    #     single_fpcs = pd.DataFrame(index = range(start_value, start_value + len(self.materials.keys())*single_pixel_count), columns=self.materials.keys(), dtype = "float")
+    #     single_fpcs["water"] = 0.0
+    #     single_endmembers = pd.DataFrame(index = range(start_value, start_value + len(self.materials.keys())*single_pixel_count), columns=self.materials.keys(), dtype = "int")
+    #     single_results_list = {}
         
-        # Change indexing to not duplicate previous indices
-        first_index = start_value
+    #     # Change indexing to not duplicate previous indices
+    #     first_index = start_value
         
-        # For each allowed material type
-        for cat in self.materials.keys():
-            indices  = range(first_index, first_index + single_pixel_count) 
-            mixed_pixels = pd.DataFrame(index = indices, columns = self.material_spectra.columns[1:], dtype="float")
+    #     # For each allowed material type
+    #     for cat in self.materials.keys():
+    #         indices  = range(first_index, first_index + single_pixel_count) 
+    #         mixed_pixels = pd.DataFrame(index = indices, columns = self.material_spectra.columns[1:], dtype="float")
             
-            # For each desired extra pixel simulation
-            for i in range(first_index, first_index + single_pixel_count):
+    #         # For each desired extra pixel simulation
+    #         for i in range(first_index, first_index + single_pixel_count):
                 
-                # Generate random FPC and water FPC, store both
-                frac_perc_cover = random()
-                single_fpcs.loc[i, cat] = frac_perc_cover
+    #             # Generate random FPC and water FPC, store both
+    #             frac_perc_cover = random()
+    #             single_fpcs.loc[i, cat] = frac_perc_cover
                 
-                water_fpc = (1- frac_perc_cover)
-                single_fpcs.loc[i, "water"] = water_fpc
+    #             water_fpc = (1- frac_perc_cover)
+    #             single_fpcs.loc[i, "water"] = water_fpc
                 
-                # Pick endmember, store
-                pixel_endmember = self.spectra_by_cat[cat].sample(n=1, axis = 0)
-                single_endmembers.loc[i, cat] = pixel_endmember.index[0] 
-                pixel_endmember = pixel_endmember.values.flatten()[1:]
+    #             # Pick endmember, store
+    #             pixel_endmember = self.spectra_by_cat[cat].sample(n=1, axis = 0)
+    #             single_endmembers.loc[i, cat] = pixel_endmember.index[0] 
+    #             pixel_endmember = pixel_endmember.values.flatten()[1:]
                                 
-                # Pick a water endmember, store
-                water_endmember = self.water_spectra.sample(n=1, axis = 0)
-                single_endmembers.loc[i, "water"] = water_endmember.index[0]
+    #             # Pick a water endmember, store
+    #             water_endmember = self.water_spectra.sample(n=1, axis = 0)
+    #             single_endmembers.loc[i, "water"] = water_endmember.index[0]
 
-                # Mixe pixel, store
-                mixed_pixel = pixel_endmember * frac_perc_cover + water_endmember *water_fpc
-                mixed_pixels.loc[i, :] = mixed_pixel.values.flatten()
+    #             # Mixe pixel, store
+    #             mixed_pixel = pixel_endmember * frac_perc_cover + water_endmember *water_fpc
+    #             mixed_pixels.loc[i, :] = mixed_pixel.values.flatten()
 
-            single_results_list[cat] = mixed_pixels
+    #         single_results_list[cat] = mixed_pixels
             
-            # Advance the indexing for the next category's pixels
+    #         # Advance the indexing for the next category's pixels
+    #         first_index += single_pixel_count
+
+    #     single_results_df = pd.concat((pd.DataFrame({**{'Code': key}, **value})\
+    #             for key, value in single_results_list.items()), ignore_index=False)
+        
+    #     return single_results_df, single_fpcs, single_endmembers
+    
+    
+    def sim_single_class_pixels(self, single_pixel_count, start_value):
+        total = len(self.materials) * single_pixel_count
+        idx = range(start_value, start_value + total)
+        cols = list(self.materials.keys())
+
+        single_fpcs = pd.DataFrame(0.0, index=idx, columns=cols + ["water"], dtype="float")
+        single_endmembers = pd.DataFrame(0, index=idx, columns=cols,dtype = "int") 
+        single_results_list = {}
+
+        first_index = start_value
+
+        for cat in self.materials.keys():
+            indices = range(first_index, first_index + single_pixel_count)
+
+            # Pre-sample all endmembers at once
+            cat_samples = self.spectra_by_cat[cat].sample(n=single_pixel_count, replace=True)
+            water_samples = self.water_spectra.sample(n=single_pixel_count, replace=True)
+
+            # Generate all FPCs at once
+            fpcs = np.random.random(single_pixel_count)
+            water_fpcs = 1.0 - fpcs
+
+            # Store FPCs
+            single_fpcs.loc[indices, cat] = fpcs
+            single_fpcs.loc[indices, "water"] = water_fpcs
+
+            # Store endmember indices
+            single_endmembers.loc[indices, cat] = cat_samples.index.values
+            # Note: store water endmember indices if needed (add water col to single_endmembers if required)
+
+            # Vectorised pixel mixing
+            spec_cols = self.material_spectra.columns[1:]
+            cat_spectra = cat_samples[spec_cols].values        # (n, bands)
+            water_spectra = water_samples[spec_cols].values    # (n, bands) -- adjust col selection as needed
+
+            mixed = cat_spectra * fpcs[:, None] + water_spectra * water_fpcs[:, None]
+            mixed_pixels = pd.DataFrame(mixed, index=indices, columns=spec_cols)
+            single_results_list[cat] = mixed_pixels
+
             first_index += single_pixel_count
 
-        single_results_df = pd.concat((pd.DataFrame({**{'Code': key}, **value})\
-                for key, value in single_results_list.items()), ignore_index=False)
-        
+        single_results_df = pd.concat(
+            [df.assign(Code=key) for key, df in single_results_list.items()]
+        )
+
         return single_results_df, single_fpcs, single_endmembers
        
     def add_water_only_pixels(self, water_pixels_count, start_value):

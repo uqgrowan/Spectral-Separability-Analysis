@@ -1,11 +1,11 @@
+from random import random
 import pandas as pd
 import numpy as np
+import joblib
 import matplotlib.pyplot as plt
-from random import random
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from scipy.optimize import curve_fit
-from sklearn.metrics import mean_squared_error, mean_absolute_error
-from sklearn.metrics import r2_score
 
 def sigmoid(x, L ,x0, k, b):
     y = L / (1 + np.exp(-k*(x-x0))) + b
@@ -72,6 +72,9 @@ def fit_best_curve(x, y, criterion = ("R2", "max"), include_zeros = True):
         all_curve_params = {}
         crit_ordering = criterion[1]
         criterion = criterion[0]
+
+        if not crit_ordering.isin(["R2", "MAE"]):
+            raise ValueError("Criterion ordering must be either 'max' or 'min'")
         
         try:
             p0 = [max(y), np.mean(x), 1, 0] # mandatory initial guess
@@ -82,7 +85,7 @@ def fit_best_curve(x, y, criterion = ("R2", "max"), include_zeros = True):
             sigmoid_stats = calc_eval_stats(y, y_pred_sigmoid, include_zeros= include_zeros)
             all_stats = {'sigmoid' : sigmoid_stats}
 
-        except RuntimeError as e:
+        except:
             print("Sigmoid fit failed, defaulting to linear.")
             all_curve_params = {'sigmoid': None}
             all_stats = {'sigmoid' : None}
@@ -105,10 +108,9 @@ def fit_best_curve(x, y, criterion = ("R2", "max"), include_zeros = True):
             d = {"sigmoid": sigmoid_crit, "linear" : linear_crit}
             if crit_ordering == "max":
                 best_fit_line = max(d, key = d.get)
-            elif crit_ordering == "min":
-                best_fit_line = min(d, key = d.get)
             else:
-                ValueError("Criterion ordering must be either 'max' or 'min'")
+                best_fit_line = min(d, key = d.get)
+    
         best_fit_params = all_curve_params.get(best_fit_line)
         
         return best_fit_params, all_curve_params, best_fit_line, all_stats
@@ -142,7 +144,7 @@ def inverse_sigmoid(y, L, x0, k, b):
 class UnmixPixels:
     
     def __init__(self, x_train, y_train, x_test, y_test, 
-                 presence_absence_thresh = 0.5):
+                 presence_absence_thresh = 0.5, reload = False, reload_dict = None):
         self.x_train = x_train.copy()
         self.y_train = y_train.copy().set_index(x_train.index)
         self.y_train[np.isnan(self.y_train)] = 0
@@ -151,12 +153,27 @@ class UnmixPixels:
         self.y_test[np.isnan(self.y_test)] = 0
         self.presence_thresh = presence_absence_thresh
         self.water_regressor = None
-        self.classifiers = None
-        self.regressors = None
         self.presence_probas = None
+        if reload:
+            try :
+                self.classifiers = joblib.load(reload_dict["classifiers"])
+            except:
+                self.classifiers = None
+            try:
+                self.regressors = joblib.load(reload_dict["regressors"])
+            except:
+                self.regressors = None
+            try: 
+                self.water_regressor = joblib.load(reload_dict["water_regressor"])
+            except : 
+                self.water_regressor = None
+        else:
+            self.classifiers = None
+            self.regressors = None
+            self.water_regressor = None
+
     
     def classify_presence(self, classifier_params, plot, regressor_params):
-        
         presence_probabilities = {
             "test": {},
             "train": {}
@@ -167,14 +184,20 @@ class UnmixPixels:
         }
         
         # WATER REGRESSION
-               
-        # Predict water fraction and add to features
-        water_rfr = RandomForestRegressor(**regressor_params).fit(self.x_train, self.y_train.iloc[:, -1])
-        water_prediction["train"] = water_rfr.predict(self.x_train)
-        water_prediction["test"] = water_rfr.predict(self.x_test)
+        
+        if self.water_regressor is None:      
+            # Predict water fraction and add to features
+            water_rfr = RandomForestRegressor(**regressor_params).fit(self.x_train, self.y_train.iloc[:, -1])
+            self.water_regressor = water_rfr
+            
+        water_prediction["train"] = self.water_regressor.predict(self.x_train)
+        water_prediction["test"] = self.water_regressor.predict(self.x_test)
 
-        # Store water regressor for unmixing new data
-        self.water_regressor = water_rfr
+        # Add water predictions to classifier input
+        self.x_train["water"] = water_prediction["train"]
+        self.x_train.columns = self.x_train.columns.astype(str)
+        self.x_test["water"] = water_prediction["test"]
+        self.x_test.columns = self.x_test.columns.astype(str)
         
         # Optional plotting
         if plot.lower() in ("water", "both"):
@@ -186,60 +209,29 @@ class UnmixPixels:
             plt.show()
         
         # CLASS-WISE PRESENCE/ABSENCE CLASSIFICATION
-        
-        # Store classifiers
-        classifiers = {}
-        
-        # Train classifier for each column except water
+        if self.classifiers is None:
+            # Store classifiers
+            self.classifiers = {}
+            
+            # Train classifier for each column except water
+            for col in self.y_train.columns[:-1]:
+                
+                #  Fit classifier to each column by presence
+                rfc = RandomForestClassifier(**classifier_params).fit(self.x_train, self.y_train.loc[:,col]> 0)
+                self.classifiers[col] = rfc
+                
+            
         for col in self.y_train.columns[:-1]:
-            
-            # Add water predictions to classifier input
-            self.x_train["water"] = water_prediction["train"]
-            self.x_train.columns = self.x_train.columns.astype(str)
-            self.x_test["water"] = water_prediction["test"]
-            self.x_test.columns = self.x_test.columns.astype(str)
-            
-            #  Fit classifier to each column by presence
-            rfc = RandomForestClassifier(**classifier_params).fit(self.x_train, self.y_train.loc[:,col]> 0)
-
             # Predict on both datasets
-            test_probas = rfc.predict_proba(self.x_test) 
-            train_probas = rfc.predict_proba(self.x_train) 
+            test_probas = self.classifiers[col].predict_proba(self.x_test) 
+            train_probas = self.classifiers[col].predict_proba(self.x_train) 
             
-            print(f"{col.capitalize()} hard classification score: {rfc.score(self.x_test, self.y_test.loc[:, col]>0)}")
-            
-            # Store classification results and models
-            # self.train_rfc[col] = train_probas[:,1] > self.presence_thresh
-            # self.train_rfc[col] = test_probas[:, 1] > self.presence_thresh
+            print(f"{col.capitalize()} hard classification score: {self.classifiers[col].score(self.x_test, self.y_test.loc[:, col]>0)}")
             
             presence_probabilities["train"][col] = train_probas[:, 1]
             presence_probabilities["test"][col] = test_probas[:, 1]
-
-            classifiers[col] = rfc
-            
-            # Optional plotting
-            if plot.lower() in ("classifier", "both"):
-                plt.scatter(x = self.y_test.loc[:, col], 
-                            y = test_probas[:, 1], 
-                            marker = 'o', 
-                            alpha = 0.4, 
-                            c = test_probas[:, 1] > self.presence_thresh, 
-                            label = "Probability of Presence")
-                plt.scatter(x = self.y_test.loc[:, col],
-                            y = test_probas[:, 1]> 0.5,
-                            alpha = 0.4,
-                            c="red",
-                            label = "Hard classification")
-                plt.legend()
-                plt.xlabel(f"True {col} FPC - test dataset")
-                plt.ylabel(f"Predicted probability of {col} presence")
-                plt.show()
-           
-            
-        self.classifiers = classifiers 
+        
         self.presence_probas = presence_probabilities
-        # presence_probabilities["train"]["water"] = self.x_train["pred_water"]
-        # presence_probabilities["test"]["water"] = self.x_test["pred_water"]
 
         return presence_probabilities, water_prediction
                 
@@ -249,52 +241,39 @@ class UnmixPixels:
             "train" : {},
             "test" : {}
         }
-        regressors = {}
         
         # filter for present pixels by threshold
         test_presence_mask = pd.DataFrame.from_dict(self.presence_probas["test"]).set_index(self.y_test.index) > self.presence_thresh
         train_presence_mask = pd.DataFrame.from_dict(self.presence_probas["train"]).set_index(self.y_train.index) > self.presence_thresh
         
+        if self.regressors is None: 
+            self.regressors = {}
+            for col in test_presence_mask.columns:
+                # Find indices of pixels with predicted class presence
+                present_test_idx  = self.x_test.index[test_presence_mask[col]]
+                present_train_idx  = self.x_train.index[train_presence_mask[col]]
+
+                #Train regressor only on present pixels
+                reg = RandomForestRegressor(**regressor_params).fit(self.x_train.loc[present_train_idx, :], self.y_train.loc[present_train_idx, col])
+                self.regressors[col] = reg
+        
         for col in test_presence_mask.columns:
-            # Find indices of pixels with predicted class presence
-            present_test_idx  = self.x_test.index[test_presence_mask[col]]
-            present_train_idx  = self.x_train.index[train_presence_mask[col]]
-            print(f"{col} present in {sum(test_presence_mask[col])} out of {test_presence_mask.shape[0]} test pixels")
-            print(f"Training set for {col} has {self.y_train.shape[0]} samples")
-            
-            
-            #Train regressor only on present pixels
-            reg = RandomForestRegressor(**regressor_params).fit(self.x_train.loc[present_train_idx, :], self.y_train.loc[present_train_idx, col])
-            
-            self.y_train[np.isnan(self.y_train)] = 0
             # Regress results for all pixels
-            test_predictions = pd.Series(reg.predict(self.x_test), index = self.x_test.index)
-            train_predictions = pd.Series(reg.predict(self.x_train), index = self.x_train.index)
+            test_predictions = pd.Series(self.regressors[col].predict(self.x_test), index = self.x_test.index)
+            train_predictions = pd.Series(self.regressors[col].predict(self.x_train), index = self.x_train.index)
             
             class_predictions["train"][col] = pd.Series(train_predictions)
             class_predictions["test"][col] = pd.Series(test_predictions)
-            
-            regressors[col] = reg
-            
-            
-            # Optional plotting
-            
-            #Predict on only present pixels
-            present_predictions_test = test_predictions[present_test_idx]
-            #reg.predict(self.x_test.loc[present_test_idx, :])
-            
+
             if plot.lower() in ("regressors", "both"):
+                #Predict on only present pixels
                 plt.scatter(x = self.y_test.loc[:, col], 
                             y = test_predictions, marker = 'x', c= "grey", label = "All simulated pixels")
-
-                plt.scatter(x = self.y_test.loc[present_test_idx, col], 
-                            y = present_predictions_test, marker = 'o', alpha = 0.4, c= self.x_test.loc[present_test_idx, "water"], label = "Pixels classified as class-present")
                 plt.legend()
                 plt.xlabel(f"True {col} FPC")
                 plt.ylabel(f"Regression Predicted {col} FPC")       
                 plt.show()
 
-        self.regressors = regressors
         return class_predictions
 
     def check_sensitivity(self, regression_predictions):
@@ -336,7 +315,7 @@ class UnmixPixels:
         mean_std_FP = (mean_FP + std_FP).astype(float).round(3)
         mean_std_FP.loc["average", :] = mean_std_FP.mean(axis = 0)
         mean_FP.loc["average", :] = mean_FP.mean(axis = 0)
-        std_FP.loc["average", :] = mean_FP.mean(axis = 0)
+        std_FP.loc["average", :] = std_FP.mean(axis = 0)
 
 
         # Calculate total pixels simulated of single classes plus water
@@ -368,9 +347,9 @@ class UnmixPixels:
                 plt.annotate(col, xy = (0.05, 0.85), xycoords= "axes fraction")
                 plt.show()
         return test_results_threshed
+       
+    def plot_sensitivity_no_water(self, predicted_values, sensi_col, spectra : pd.DataFrame, possible_colours : list, endmembers : pd.DataFrame,FP_thresh_mode = "share", FP_thresh = None, ax_height = 2.5,  true_y = None,  savefig = False, plot_output_dir = None, cols_to_plot = None):
     
-    def plot_sensitivity(self, predicted_values, sensi_col, FP_thresh_mode = "share", FP_thresh = None, spectra = pd.DataFrame, ax_height = 2.5, possible_colours = list, true_y = None, endmembers = pd.DataFrame, savefig = False, plot_output_dir = None):
-        
         """
         
         Args:
@@ -381,7 +360,7 @@ class UnmixPixels:
             spectra (DF): endmember spectra
             possible_colours (list): list of colours that can be used for plotting
         """
-        
+    
         # Initialize variables
         if true_y is None:
             true_y = self.y_test
@@ -412,7 +391,7 @@ class UnmixPixels:
             print(f"Thresholding by false positive share.\nEndmembers producing more than {round(FP_share, 1)} % of false positives will be identified.")
         elif FP_thresh_mode == "count":
             if FP_thresh is None:
-               FP_thresh = 0.006
+                FP_thresh = 0.006
             # How many false positives is considered too many?
             b = int(len(single_class_fpcs[sensi_col]) * FP_thresh)
             print(f"Thresholding by pixel count. \n{FP_thresh *100} % false positive threshold: {b} pixels")
@@ -427,7 +406,7 @@ class UnmixPixels:
 
         # Plot sensitivity with only one not-simulated class
         if not_simulated_classes.shape[1] == 1: 
-            fig, ax = plt.subplots(nrows = 1, ncols = 4, figsize = (12, ax_height), layout = "constrained")
+            fig, ax = plt.subplots(nrows = 1, ncols = 3, figsize = (9, ax_height+0.5), layout = "constrained")
             
             #cycle through rows in the plots and columns in the data
             for i in enumerate(not_simulated_classes):
@@ -479,70 +458,63 @@ class UnmixPixels:
                                 linewidths = 0,
                                 s = 15
                                 )
-                    ax[0].set_ylabel("Predicted FPC")
+                    ax[0].set_ylabel("Predicted FPC")                   
                     ax[1].scatter(
-                          x = single_endmem_data["true_water"],
-                          y = single_endmem_data["water"],
-                          color = single_endmem_data["colour"],
-                          label = idx,
-                          alpha = single_endmem_data["alpha"],
-                          linewidths = 0,
-                          s = 15
-                          )
-                    
-                    ax[2].scatter(
-                              x=[idx[0]+random()*0.08 for x in range(single_endmem_data.shape[0])],
-                              y=single_endmem_data[i[1]],
-                              c=single_endmem_data["colour"],
-                              s=8,
-                              linewidths=0
-                              )
-                    ax[2].hlines(sensitive_data[i[1]].mean(),
-                              xmin = 0,
-                              xmax = len(ordered_indices),
-                              colors = "blue",
-                              linewidth = 0.4)
-                    ax[2].hlines(sensitive_data[i[1]].mean()+2*sensitive_data[i[1]].std(),
+                                x=[idx[0]+random()*0.05 for x in range(single_endmem_data.shape[0])],
+                                y=single_endmem_data[i[1]],
+                                c=single_endmem_data["colour"],
+                                s=8,
+                                linewidths=0
+                                )
+                    ax[1].hlines(sensitive_data[i[1]].mean(),
+                                xmin = 0,
+                                xmax = len(ordered_indices),
+                                colors = "blue",
+                                linewidth = 0.4)
+                    ax[1].hlines(sensitive_data[i[1]].mean()+2*sensitive_data[i[1]].std(),
                                     xmin = 0,
                                     xmax = len(ordered_indices),
                                     colors = "red",
                                     linestyles = "--",
                                     linewidth = 0.6
                                     )
-                    ax[2].hlines(sensitive_data[i[1]].mean()+sensitive_data[i[1]].std(),
+                    ax[1].hlines(sensitive_data[i[1]].mean()+sensitive_data[i[1]].std(),
                                     xmin = 0,
                                     xmax = len(ordered_indices),
                                     colors = "black",
                                     linestyles = ":",
                                     linewidth = 0.6)
                     
-                    ax[2].set_xticks([])
-                    ax[2].annotate(i[1].capitalize().replace("_", " "), xy = (0.1, 0.8), xycoords = "axes fraction")
+                    ax[1].set_xticks([])
+                    ax[1].annotate(i[1].capitalize().replace("_", " "), xy = (0.2, 0.6), xycoords = "axes fraction", size = 12)
                     
-                    ax[3].plot(spectra.loc[idx[1], :].T,
+                    ax[2].plot(spectra.loc[idx[1], :].T,
                             color = endmem_colours.get(idx[1], "grey"),
                             label = idx[1],
                             alpha = 0.25 if endmem_colours.get(idx[1], "grey")== "grey" else 1)
-                    ax[3].set_ylabel("Reflectance")
-                    ax[3].set_xticks([])
+                    ax[2].set_ylabel("Reflectance")
+                    ax[2].set_xticks([])
 
-            ax[0].set_title(f"Predicted {sensi_col} FPC")
-            ax[1].set_title("Predicted water FPC")
-            ax[2].set_title("False positive FPC predictions\nby simulation endmber")
-            ax[3].set_title("Contributing endmembers'\nspectral profiles")
+            ax[0].set_title(f"Predicted {sensi_col.lower().replace("_", " ")} FPC")
+            ax[0].annotate("A", xy = (0.05, 0.8), xycoords = "axes fraction", size = 16)
+            ax[1].set_title("False positive FPC predictions\nby simulation endmember")
+            ax[1].annotate("B", xy = (0.05, 0.8), xycoords = "axes fraction", size = 16)
+            ax[2].set_title("Contributing endmembers'\nspectral profiles")
+            ax[2].annotate("D", xy = (0.05, 0.8), xycoords = "axes fraction", size = 16)
             ax[0].set_xlabel(f"True simulated {sensi_col.capitalize().replace('_', ' ')} FPC")
-            ax[1].set_xlabel("True simulated water FPC")
-            ax[2].set_xlabel("False positive FPC predictions\nby endmember")
+            ax[1].set_xlabel("False positive FPC predictions\nby endmember")
             if len(spectra.columns) < 12:
-                ax[3].set_xticks(spectra.columns)
-                ax[3].set_xlabel("Sensor band")
+                ax[2].set_xticks(spectra.columns)
+                ax[2].set_xlabel("Sensor band")
             else:
-                ax[3].set_xticks(spectra.columns[np.arange(0, len(spectra.columns), 10)])
-                ax[3].set_xticklabels(spectra.columns[np.arange(0, len(spectra.columns), 10)])
-                ax[3].set_xlabel("Sensor band (nm)")
+                ax[2].set_xticks(spectra.columns[np.arange(0, len(spectra.columns), 10)])
+                ax[2].set_xticklabels(spectra.columns[np.arange(0, len(spectra.columns), 10)])
+                ax[2].set_xlabel("Sensor band (nm)")
             
         else:
-            fig, ax = plt.subplots(not_simulated_classes.shape[1], 4, figsize = (12, not_simulated_classes.shape[1]*ax_height), sharey = "col", layout = "constrained" )
+            if cols_to_plot is not None:
+                not_simulated_classes = not_simulated_classes.loc[:, cols_to_plot]
+            fig, ax = plt.subplots(not_simulated_classes.shape[1], 3, figsize = (9, not_simulated_classes.shape[1]*ax_height), sharey = "col", layout = "constrained" )
         
 
             #cycle through rows in the plots and columns in the data
@@ -597,80 +569,72 @@ class UnmixPixels:
                                 )
                     ax[i[0], 0].set_ylabel("Predicted FPC")
                     ax[i[0], 1].scatter(
-                                x = single_endmem_data["true_water"],
-                                y = single_endmem_data["water"], 
-                                color = single_endmem_data["colour"], 
-                                label = idx, 
-                                alpha = single_endmem_data["alpha"],
-                                linewidths = 0,
-                                s = 15
-                                )          
-                    
-                    ax[i[0], 2].scatter(
                                     x=[idx[0]+random()*0.08 for x in range(single_endmem_data.shape[0])],
                                     y=single_endmem_data[i[1]],
                                     c=single_endmem_data["colour"],
                                     s=8,
                                     linewidths=0
                                     )
-                    ax[i[0], 2].hlines(sensitive_data[i[1]].mean(), 
+                    ax[i[0], 1].hlines(sensitive_data[i[1]].mean(), 
                                     xmin = 0, 
                                     xmax = len(ordered_indices), 
                                     colors = "blue", 
                                     linewidth = 0.4)
-                    ax[i[0], 2].hlines(sensitive_data[i[1]].mean()+2*sensitive_data[i[1]].std(), 
+                    ax[i[0], 1].hlines(sensitive_data[i[1]].mean()+2*sensitive_data[i[1]].std(), 
                                     xmin = 0, 
                                     xmax = len(ordered_indices), 
                                     colors = "red", 
                                     linestyles = "--", 
                                     linewidth = 0.6
                                     )
-                    ax[i[0], 2].hlines(sensitive_data[i[1]].mean()+sensitive_data[i[1]].std(), 
+                    ax[i[0], 1].hlines(sensitive_data[i[1]].mean()+sensitive_data[i[1]].std(), 
                                     xmin = 0, 
                                     xmax = len(ordered_indices), 
                                     colors = "black", 
                                     linestyles = ":", 
                                     linewidth = 0.6)
                     
-                    ax[i[0], 2].set_xticks([])
-                    ax[i[0], 2].annotate(i[1].capitalize().replace("_", " "), xy = (0.1, 0.8), xycoords = "axes fraction")
+                    ax[i[0], 1].set_xticks([])
+                    ax[i[0], 1].annotate(i[1].capitalize().replace("_", " "), xy = (0.2, 0.7), xycoords = "axes fraction", size = 10)
                     
-                    ax[i[0], 3].plot(spectra.loc[idx[1], :].T, 
+                    ax[i[0], 2].plot(spectra.loc[idx[1], :].T, 
                             color = endmem_colours.get(idx[1], "grey"), 
                             label = idx[1],
                             alpha = 0.25 if endmem_colours.get(idx[1], "grey") == "grey" else 1)
-                    ax[i[0], 3].set_ylabel(f"Reflectance")
+                    ax[i[0], 2].set_ylabel(f"Reflectance")
                     if len(spectra.columns) < 12:
-                        ax[i[0], 3].set_xticks(spectra.columns)
-                        ax[i[0], 3].set_xticklabels([])
+                        ax[i[0], 2].set_xticks(spectra.columns)
+                        ax[i[0], 2].set_xticklabels([])
                     else:
-                        ax[i[0], 3].set_xticks(spectra.columns[np.arange(0, len(spectra.columns), 10)])
-                        ax[i[0], 3].set_xticklabels([])
+                        ax[i[0], 2].set_xticks(spectra.columns[np.arange(0, len(spectra.columns), 10)])
+                        ax[i[0], 2].set_xticklabels([])
 
-            ax[0,0].set_title(f"Predicted {sensi_col} FPC")
-            ax[0,1].set_title("Predicted water FPC")
-            ax[0,2].set_title("False positive FPC predictions\nby simulation endmember")
-            ax[0,3].set_title("Contrbuting endmembers'\nspectral profiles")
-            ax[-1, 0].set_xlabel(f"True simulated {sensi_col.capitalize().replace("_", " ")} FPC")
-            ax[-1, 1].set_xlabel("True simulated Water FPC")
-            ax[-1, 2].set_xlabel("False positive FPC predictions\nby endmember")
+            ax[0,0].set_title(f"Predicted {sensi_col.lower().replace("_", " ")} FPC")
+            ax[0,0].annotate("A", xy = (0.05, 0.8), xycoords = "axes fraction", size = 16)
+            ax[0,1].set_title("False positive FPC predictions\nby simulation endmember")
+            ax[0,1].annotate("B", xy = (0.05, 0.8), xycoords = "axes fraction", size = 16)
+            ax[0,2].set_title("Contrbuting endmembers'\nspectral profiles")
+            ax[0,2].annotate("C", xy = (0.05, 0.8), xycoords = "axes fraction", size = 16)
+            ax[-1, 0].set_xlabel(f"True simulated {sensi_col.lower().replace("_", " ")} FPC")
+            ax[-1, 1].set_xlabel("False positive FPC predictions\nby endmember")
             if len(spectra.columns) < 12:
-                ax[-1, 3].set_xticks(spectra.columns)
-                ax[-1, 3].set_xlabel("Sensor band")
+                ax[-1, 2].set_xticks(spectra.columns)
+                ax[-1, 2].set_xticklabels(spectra.columns)
+                ax[-1, 2].set_xlabel("Sensor band")
             else:
-                ax[-1, 3].set_xticks(spectra.columns[np.arange(0, len(spectra.columns), 10)])
-                ax[-1, 3].set_xticklabels(spectra.columns[np.arange(0, len(spectra.columns), 10)])
-                ax[-1, 3].set_xlabel("Sensor band (nm)")
+                ax[-1, 2].set_xticks(spectra.columns[np.arange(0, len(spectra.columns), 10)])
+                ax[-1, 2].set_xticklabels(spectra.columns[np.arange(0, len(spectra.columns), 10)])
+                ax[-1, 2].set_xlabel("Sensor band (nm)")
             
             
         plt.xticks(rotation = 45)
         if savefig:
-            plt.savefig(f"{plot_output_dir}false_positive_endmember_investigation.svg", bbox_inches = "tight")
-            plt.savefig(f"{plot_output_dir}false_positive_endmember_investigation.png", bbox_inches = "tight")
+            plt.savefig(f"{plot_output_dir}false_positive_endmember_investigation_NOWATER.svg", bbox_inches = "tight")
+            plt.savefig(f"{plot_output_dir}false_positive_endmember_investigation_NOWATER.png", bbox_inches = "tight")
         plt.show()
         
         return
-    
+        
     def fit_all_curves(self, predicted_values, criterion = ("R2", "max"), include_zeros = False):
         fitted_curves = {}
         all_stats = {}

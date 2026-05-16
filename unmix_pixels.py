@@ -73,7 +73,7 @@ def fit_best_curve(x, y, criterion = ("R2", "max"), include_zeros = True):
         crit_ordering = criterion[1]
         criterion = criterion[0]
 
-        if not crit_ordering.isin(["R2", "MAE"]):
+        if crit_ordering not in(["max", "min"]):
             raise ValueError("Criterion ordering must be either 'max' or 'min'")
         
         try:
@@ -681,15 +681,18 @@ class UnmixPixels:
                     raise ValueError("Fitted curve parameters unexpected size.")
             
             if chosen_fit == "sigmoid": 
-                # Access sigmoid params
-                L, x0, k, b = self.all_curves[col][chosen_fit]
+                try:
+                    # Access sigmoid params
+                    L, x0, k, b = self.all_curves[col][chosen_fit]
 
-                # Calculate inverse sigmoid for predicted values
-                x_result = inverse_sigmoid(data_to_invert.loc[:, col], L, x0, k, b)
-                x_result = np.clip(x_result, 0, 1)
-                
-                # Store new predicted values
-                predicted_covers[col] = x_result
+                    # Calculate inverse sigmoid for predicted values
+                    x_result = inverse_sigmoid(data_to_invert.loc[:, col], L, x0, k, b)
+                    x_result = np.clip(x_result, 0, 1)
+                    
+                    # Store new predicted values
+                    predicted_covers[col] = x_result
+                except:
+                    predicted_covers[col] = np.nan
                 
             elif chosen_fit == "linear":
                 # Access linear params

@@ -47,7 +47,7 @@ class LinearMixing:
         }
         self.odds_dict = odds_dict #if not None else {cat: (1, 0) for cat in self.materials.keys()}
     
-    def choose_materials(self, maximum_classes = 6):
+    def choose_materials(self, maximum_classes):
         """
         Binary random determination of presence/absence in the pixel for each material. If an odds dictionary is provided, classes will be included in the simulated pixels according to those odds. If no odds dictionary is provided, all classes will be simulated with 50-50 odds up to a user defined maximum number of classes. 
         
@@ -56,7 +56,7 @@ class LinearMixing:
         present_materials (list): List of material categories present in the pixel.
         """
         
-        if self.odds_dict: # is not None:
+        if maximum_classes is None:
             return [cat for cat in self.materials if getrandbits(self.odds_dict[cat][0]) > self.odds_dict[cat][1]]
         else: 
             k = randint(1, maximum_classes)
@@ -95,12 +95,12 @@ class LinearMixing:
             endmember_indices[cat] = spectrum.index[0]
         return pixel_endmembers, endmember_indices
 
-    def calculate_pixel(self):
+    def calculate_pixel(self, max_class_count):
         """
         Simulate the isgnal of a  mixed pixel according to the randomly alotted fractional percent covers, and randomly selected endmembers.
         """
         # Determine materials present in pixel
-        materials_list = self.choose_materials()
+        materials_list = self.choose_materials(max_class_count)
         
         # Generate random FPC for each present material
         frac_perc_covers = self.generate_random_compositions(materials_list)
@@ -123,7 +123,7 @@ class LinearMixing:
      
         return mixed_pixel, frac_perc_covers, endmember_indices
     
-    def sim_many_pixels(self):
+    def sim_many_pixels(self, max_class_count):
         """
         Simulate multiple mixed pixels and store the results in a DataFrame.
         """
@@ -132,7 +132,7 @@ class LinearMixing:
         results_list = []
     
         for i in range(self.pixels):
-            mixed_pixel, fpc, endmember_indices = self.calculate_pixel()
+            mixed_pixel, fpc, endmember_indices = self.calculate_pixel(max_class_count)
             results_list.append(mixed_pixel)
             fpcs[i] = fpc
             endmembers[i] = endmember_indices

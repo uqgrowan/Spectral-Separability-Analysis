@@ -20,7 +20,11 @@ class LinearMixing:
         self.water_spectra = water_spectra
         self.material_spectra = material_spectra
     
+<<<<<<< Updated upstream
     def make_placeholder(self, rows, cols):
+=======
+    def choose_materials(self, set_max_classes):
+>>>>>>> Stashed changes
         """
         Create a placeholder DataFrame to store the results of the linear mixing model.
         
@@ -37,6 +41,7 @@ class LinearMixing:
         Outputs
         present_materials (list): List of material categories present in the pixel.
         """
+<<<<<<< Updated upstream
         present_materials = []
         for item in self.materials.items():
             present = getrandbits(1)
@@ -45,6 +50,20 @@ class LinearMixing:
             else:
                 pass
         return present_materials
+=======
+        if set_max_classes is False:
+            return [cat for cat in self.materials if getrandbits(self.odds_dict[cat][0]) > self.odds_dict[cat][1]]
+        else: 
+            k = randint(1, set_max_classes)
+            return sample(sorted(self.materials), k = k)   
+
+        
+        # if self.odds_dict: # is not None:
+        #     return [cat for cat in self.materials if getrandbits(self.odds_dict[cat][0]) > self.odds_dict[cat][1]]
+        # else: 
+        #     k = randint(1, maximum_classes)
+        #     return sample(sorted(self.materials), k = k)    
+>>>>>>> Stashed changes
 
     def generate_random_compositions(self, present_materials):
         """
@@ -77,12 +96,12 @@ class LinearMixing:
             pixel_endmembers[cat] = spectrum
         return pixel_endmembers
 
-    def calculate_pixel(self):
+    def calculate_pixel(self, set_max_classes):
         """
         Simulate the isgnal of a  mixed pixel according to the randomly alotted fractional percent covers, and randomly selected endmembers.
         """
         # Determine materials present in pixel
-        materials_list = self.choose_materials()
+        materials_list = self.choose_materials(set_max_classes)
         
         # Generate random FPC for each present material
         frac_perc_covers = self.generate_random_compositions(materials_list)
@@ -106,11 +125,34 @@ class LinearMixing:
         
         return mixed_pixel
     
-    def sim_many_pixels(self):
+    def sim_many_pixels(self, set_max_classes = False):
         """
         Simulate multiple mixed pixels and store the results in a DataFrame.
         """
+<<<<<<< Updated upstream
         results = self.make_placeholder(rows=self.material_spectra.index, cols=range(self.pixels))
+=======
+        fpcs = {}
+        endmembers = {}
+        results_list = []
+    
+        for i in range(self.pixels):
+            mixed_pixel, fpc, endmember_indices = self.calculate_pixel(set_max_classes)
+            results_list.append(mixed_pixel)
+            fpcs[i] = fpc
+            endmembers[i] = endmember_indices
+    
+        results = np.stack(results_list)  # Combine at the end
+        return results, fpcs, endmembers
+    
+    def format_sim_results(self, results, fpc_dict, endmembers):
+        """
+        Reformat the simulation results into a DataFrame with appropriate column names.
+        """
+        if len(results.shape) == 3:
+            results = results[:,0,:]
+        results_df = pd.DataFrame(results, columns=self.material_spectra.columns[1:])
+>>>>>>> Stashed changes
         
         for pixel in range(self.pixels):
             print(F"Simulating pixel {pixel+1}")

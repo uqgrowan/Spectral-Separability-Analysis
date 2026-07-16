@@ -215,9 +215,9 @@ class UnmixPixels:
             
             # Train classifier for each column except water
             for col in self.y_train.columns[:-1]:
-                
+                y_bool = (self.y_train.loc[:,col]>0).astype(int) #Class output as integer for GEE compatibility
                 #  Fit classifier to each column by presence
-                rfc = RandomForestClassifier(**classifier_params).fit(self.x_train, self.y_train.loc[:,col]> 0)
+                rfc = RandomForestClassifier(**classifier_params).fit(self.x_train, y_bool)
                 self.classifiers[col] = rfc
                 
             
